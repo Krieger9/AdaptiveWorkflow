@@ -1,0 +1,17 @@
+if aivista builds underwriting as service as software, how does it adapt to the human in the loop to provide the level of detail, the way they like to receive info, etc etc
+
+ 
+
+think about if you and i were both underwriters. the system should adapt to us. you might want heavy details with recommended decision, i might want top level insights with 3 options based risk profile
+
+ 
+
+let me be specific, if just like to know before i start incorporating this into my talk track etc, i want to know how it could be done
+
+ 
+
+so could you ask maybe jason if this is technically feasible. and if you have engineers on the bench, could they try to do this. at least the presentation layer
+
+ 
+
+can an agent or 2 be built to understand context and another agent create a presentation layer based on that context… maybe instead of workforce we look at retail e-commerce?

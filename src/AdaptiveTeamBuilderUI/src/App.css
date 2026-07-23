@@ -1,0 +1,159 @@
+.shell {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.5rem;
+  border-bottom: 1px solid #d8d8de;
+  background: #fff;
+}
+
+.brand {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.menu {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.linkish {
+  border: none;
+  background: transparent;
+  color: #1a4f8b;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.35rem 0.55rem;
+  border-radius: 4px;
+}
+
+.linkish:hover {
+  background: #eef3f9;
+}
+
+.app {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+}
+
+.app.wide {
+  justify-content: stretch;
+}
+
+.panel {
+  width: min(34rem, 100%);
+  background: #fff;
+  border: 1px solid #d8d8de;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.panel h1 {
+  margin: 0 0 0.75rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.muted {
+  margin: 0 0 1.25rem;
+  color: #5c5c66;
+  line-height: 1.45;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.form label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.form input {
+  font: inherit;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #c5c5cd;
+  border-radius: 6px;
+}
+
+.form button,
+.actions button,
+.panel > button {
+  font: inherit;
+  padding: 0.6rem 0.9rem;
+  border-radius: 6px;
+  border: 1px solid #1a4f8b;
+  background: #1a4f8b;
+  color: #fff;
+  cursor: pointer;
+}
+
+.panel > button:disabled,
+.form button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.actions .secondary {
+  background: #fff;
+  color: #1a1a1a;
+  border-color: #c5c5cd;
+}
+
+.meta {
+  margin: 1.25rem 0 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.meta div {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: 0.5rem;
+}
+
+.meta dt {
+  margin: 0;
+  color: #5c5c66;
+  font-weight: 500;
+}
+
+.meta dd {
+  margin: 0;
+}
+
+.error {
+  width: min(34rem, 100%);
+  margin: 0 auto 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  background: #fdecec;
+  color: #8a1f1f;
+  border: 1px solid #f0c0c0;
+}
