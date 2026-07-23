@@ -1,33 +1,112 @@
-.profiles {
-  width: min(72rem, 100%);
+.team-builder {
+  width: min(96rem, 100%);
   display: grid;
-  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1.4fr) minmax(20rem, 0.9fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .team-builder {
+    grid-template-columns: 1fr;
+  }
+}
+
+.team-panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.team-panel-header h1 {
+  margin: 0 0 0.35rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.team-panel-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: flex-end;
+}
+
+.team-panel-nav .linkish,
+.team-active-bar .linkish {
+  border: none;
+  background: transparent;
+  color: #1a4f8b;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.25rem 0.45rem;
+  border-radius: 4px;
+}
+
+.team-panel-nav .linkish:hover,
+.team-active-bar .linkish:hover {
+  background: #eef3f9;
+}
+
+.team-start {
+  display: grid;
+  gap: 0.85rem;
+  background: #fff;
+  border: 1px solid #d8d8de;
+  border-radius: 8px;
+  padding: 1rem 1.15rem;
+}
+
+.team-start.compact {
+  grid-template-columns: 1fr auto;
+  align-items: end;
+}
+
+.team-open-existing {
+  justify-self: start;
 }
 
 .profiles-header h1 {
   margin: 0 0 0.35rem;
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.02em;
+}
+
+.profiles-filters,
+.team-create,
+.team-rename,
+.team-requirements,
+.team-members,
+.profiles-list-panel,
+.profiles-detail-panel {
+  background: #fff;
+  border: 1px solid #d8d8de;
+  border-radius: 8px;
+  padding: 1rem 1.15rem;
 }
 
 .profiles-filters {
   display: grid;
   gap: 1rem;
-  padding: 1rem 1.15rem;
-  background: #fff;
-  border: 1px solid #d8d8de;
-  border-radius: 8px;
 }
 
-.profiles-search {
+.profiles-search,
+.team-create label,
+.team-rename label,
+.team-switch {
   display: grid;
   gap: 0.35rem;
   font-size: 0.95rem;
   font-weight: 500;
 }
 
-.profiles-search input {
+.profiles-search input,
+.team-create input,
+.team-rename input,
+.team-switch select,
+.team-requirements input[type='number'] {
   font: inherit;
   padding: 0.55rem 0.65rem;
   border: 1px solid #c5c5cd;
@@ -60,16 +139,30 @@
   font-weight: 400;
 }
 
-.profiles-actions {
+.profiles-actions,
+.team-create,
+.team-rename {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 0.75rem;
+  align-items: end;
+}
+
+.team-create,
+.team-rename {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
 }
 
 .profiles-actions button,
-.profiles-filters button {
+.team-create button,
+.team-rename button,
+.team-requirements button,
+.profiles-list-actions button,
+.team-member-list button {
   font: inherit;
-  padding: 0.55rem 0.9rem;
+  padding: 0.5rem 0.85rem;
   border-radius: 6px;
   border: 1px solid #1a4f8b;
   background: #1a4f8b;
@@ -77,41 +170,36 @@
   cursor: pointer;
 }
 
-.profiles-actions .secondary {
+.profiles-actions .secondary,
+.profiles-list-actions .secondary,
+.team-member-list .secondary {
   background: #fff;
   color: #1a1a1a;
   border-color: #c5c5cd;
 }
 
-.profiles-actions button:disabled {
+button:disabled {
   opacity: 0.65;
   cursor: not-allowed;
 }
 
 .profiles-layout {
   display: grid;
-  grid-template-columns: minmax(16rem, 22rem) 1fr;
+  grid-template-columns: minmax(14rem, 1fr) minmax(14rem, 1fr);
   gap: 1rem;
   align-items: start;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 900px) {
   .profiles-layout {
     grid-template-columns: 1fr;
   }
 }
 
-.profiles-list-panel,
-.profiles-detail-panel {
-  background: #fff;
-  border: 1px solid #d8d8de;
-  border-radius: 8px;
-  padding: 1rem;
-  min-height: 18rem;
-}
-
 .profiles-list-panel h2,
-.profiles-detail-panel h2 {
+.profiles-detail-panel h2,
+.team-requirements h2,
+.team-members h2 {
   margin: 0 0 0.85rem;
   font-size: 1.05rem;
   font-weight: 600;
@@ -123,12 +211,14 @@
   padding: 1.25rem;
   color: #5c5c66;
   background: #fafafb;
-  min-height: 8rem;
+  min-height: 6rem;
   display: flex;
   align-items: center;
 }
 
-.profiles-list {
+.profiles-list,
+.team-member-list,
+.team-requirements ul {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -137,26 +227,29 @@
 }
 
 .profiles-list-item {
-  width: 100%;
-  text-align: left;
   border: 1px solid #d8d8de;
   background: #fff;
   border-radius: 6px;
-  padding: 0.7rem 0.8rem;
-  cursor: pointer;
+  padding: 0.55rem 0.65rem;
   display: grid;
-  gap: 0.2rem;
-  font: inherit;
-}
-
-.profiles-list-item:hover {
-  border-color: #9eb6d4;
-  background: #f7faff;
+  gap: 0.55rem;
 }
 
 .profiles-list-item.active {
   border-color: #1a4f8b;
   background: #eef4fb;
+}
+
+.profiles-list-main {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  display: grid;
+  gap: 0.2rem;
+  font: inherit;
 }
 
 .profiles-list-name {
@@ -167,6 +260,56 @@
 .profiles-list-title {
   color: #5c5c66;
   font-size: 0.9rem;
+}
+
+.profiles-list-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.team-requirements li {
+  display: grid;
+  grid-template-columns: 1fr 4.5rem 3.5rem;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.req-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.req-marker {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  background: #c5c5cd;
+}
+
+.team-requirements li.under .req-marker {
+  background: #c62828;
+}
+
+.team-requirements li.met .req-marker {
+  background: #2e7d32;
+}
+
+.req-count {
+  font-size: 0.9rem;
+  color: #5c5c66;
+  text-align: right;
+}
+
+.team-member-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: start;
+  border: 1px solid #d8d8de;
+  border-radius: 6px;
+  padding: 0.7rem 0.8rem;
 }
 
 .profile-card {
@@ -231,4 +374,10 @@
   background: #eef3f9;
   border: 1px solid #d2deec;
   font-size: 0.85rem;
+}
+
+.muted {
+  margin: 0;
+  color: #5c5c66;
+  line-height: 1.45;
 }

@@ -8,9 +8,13 @@ public class PositionType
 
     public string Name { get; set; } = string.Empty;
 
+    public int SortOrder { get; set; }
+
     public ICollection<EmployeeProfile> EmployeeProfiles { get; set; } = new List<EmployeeProfile>();
 
     public ICollection<RoleSpecialty> RoleSpecialties { get; set; } = new List<RoleSpecialty>();
+
+    public ICollection<TeamPositionRequirement> TeamPositionRequirements { get; set; } = new List<TeamPositionRequirement>();
 }
 
 public class ExperienceLevel

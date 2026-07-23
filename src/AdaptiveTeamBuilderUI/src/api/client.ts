@@ -124,6 +124,7 @@ export type EmployeeProfile = {
 export async function searchEmployeeProfiles(options: {
   q?: string
   positionTypes?: PositionType[]
+  teamId?: string | null
 }): Promise<EmployeeProfileListItem[]> {
   const params = new URLSearchParams()
   if (options.q?.trim()) {
@@ -131,6 +132,9 @@ export async function searchEmployeeProfiles(options: {
   }
   if (options.positionTypes && options.positionTypes.length > 0) {
     params.set('positionTypes', options.positionTypes.join(','))
+  }
+  if (options.teamId) {
+    params.set('teamId', options.teamId)
   }
 
   const query = params.toString()
@@ -146,6 +150,121 @@ export async function getEmployeeProfile(id: string): Promise<EmployeeProfile> {
     headers: await authHeaders(),
   })
   return parseJson<EmployeeProfile>(response)
+}
+
+export type TeamListItem = {
+  id: string
+  name: string
+}
+
+export type TeamRequirement = {
+  positionType: PositionType
+  positionTypeName: string
+  requiredCount: number
+  selectedCount: number
+}
+
+export type TeamMember = {
+  employeeProfileId: string
+  firstName: string
+  lastName: string
+  displayName: string
+  positionType: PositionType
+  roleSpecialty: string | null
+  level: string | null
+  title: string
+}
+
+export type TeamDetail = {
+  id: string
+  name: string
+  createdDate: string
+  modifiedDate: string
+  requirements: TeamRequirement[]
+  members: TeamMember[]
+  hiddenEmployeeProfileIds: string[]
+}
+
+export async function listTeams(): Promise<TeamListItem[]> {
+  const response = await fetch(`${apiBaseUrl}/api/teams`, {
+    headers: await authHeaders(),
+  })
+  return parseJson<TeamListItem[]>(response)
+}
+
+export async function createTeam(name: string): Promise<TeamDetail> {
+  const response = await fetch(`${apiBaseUrl}/api/teams`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({ name }),
+  })
+  return parseJson<TeamDetail>(response)
+}
+
+export async function getTeam(id: string): Promise<TeamDetail> {
+  const response = await fetch(`${apiBaseUrl}/api/teams/${id}`, {
+    headers: await authHeaders(),
+  })
+  return parseJson<TeamDetail>(response)
+}
+
+export async function renameTeam(id: string, name: string): Promise<TeamDetail> {
+  const response = await fetch(`${apiBaseUrl}/api/teams/${id}`, {
+    method: 'PUT',
+    headers: await authHeaders(),
+    body: JSON.stringify({ name }),
+  })
+  return parseJson<TeamDetail>(response)
+}
+
+export async function upsertTeamRequirements(
+  teamId: string,
+  requirements: { positionType: PositionType; requiredCount: number }[],
+): Promise<TeamDetail> {
+  const response = await fetch(`${apiBaseUrl}/api/teams/${teamId}/requirements`, {
+    method: 'PUT',
+    headers: await authHeaders(),
+    body: JSON.stringify({ requirements }),
+  })
+  return parseJson<TeamDetail>(response)
+}
+
+export async function addTeamMember(
+  teamId: string,
+  employeeProfileId: string,
+): Promise<TeamDetail> {
+  const response = await fetch(`${apiBaseUrl}/api/teams/${teamId}/members`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({ employeeProfileId }),
+  })
+  return parseJson<TeamDetail>(response)
+}
+
+export async function removeTeamMember(
+  teamId: string,
+  employeeProfileId: string,
+): Promise<TeamDetail> {
+  const response = await fetch(
+    `${apiBaseUrl}/api/teams/${teamId}/members/${employeeProfileId}`,
+    {
+      method: 'DELETE',
+      headers: await authHeaders(),
+    },
+  )
+  return parseJson<TeamDetail>(response)
+}
+
+export async function hideTeamProfile(
+  teamId: string,
+  employeeProfileId: string,
+): Promise<TeamDetail> {
+  const response = await fetch(`${apiBaseUrl}/api/teams/${teamId}/hidden`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({ employeeProfileId }),
+  })
+  return parseJson<TeamDetail>(response)
 }
 
 export function greetingName(user: User): string {

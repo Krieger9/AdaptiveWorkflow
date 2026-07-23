@@ -24,11 +24,20 @@ public class AdaptiveTeamBuilderDbContext : DbContext
 
     public DbSet<EmployeeProfileSkill> EmployeeProfileSkills => Set<EmployeeProfileSkill>();
 
+    public DbSet<Team> Teams => Set<Team>();
+
+    public DbSet<TeamPositionRequirement> TeamPositionRequirements => Set<TeamPositionRequirement>();
+
+    public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
+
+    public DbSet<TeamHiddenProfile> TeamHiddenProfiles => Set<TeamHiddenProfile>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ConfigureUser(modelBuilder);
         ConfigureLookups(modelBuilder);
         ConfigureEmployeeProfile(modelBuilder);
+        ConfigureTeams(modelBuilder);
     }
 
     private static void ConfigureUser(ModelBuilder modelBuilder)
@@ -63,6 +72,7 @@ public class AdaptiveTeamBuilderDbContext : DbContext
         positionType.Property(p => p.Id).ValueGeneratedNever();
         positionType.Property(p => p.Code).IsRequired().HasMaxLength(32);
         positionType.Property(p => p.Name).IsRequired().HasMaxLength(100);
+        positionType.Property(p => p.SortOrder).IsRequired();
         positionType.HasIndex(p => p.Code).IsUnique().HasDatabaseName("UQ_PositionTypes_Code");
 
         var level = modelBuilder.Entity<ExperienceLevel>();
@@ -147,5 +157,59 @@ public class AdaptiveTeamBuilderDbContext : DbContext
 
         link.HasIndex(x => x.SkillId)
             .HasDatabaseName("IX_EmployeeProfileSkills_SkillId");
+    }
+
+    private static void ConfigureTeams(ModelBuilder modelBuilder)
+    {
+        var team = modelBuilder.Entity<Team>();
+        team.ToTable("Teams");
+        team.HasKey(t => t.Id);
+        team.Property(t => t.Name).IsRequired().HasMaxLength(200);
+        team.Property(t => t.CreatedDate).IsRequired();
+        team.Property(t => t.ModifiedDate).IsRequired();
+        team.HasIndex(t => t.Name).IsUnique().HasDatabaseName("UQ_Teams_Name");
+
+        var requirement = modelBuilder.Entity<TeamPositionRequirement>();
+        requirement.ToTable("TeamPositionRequirements");
+        requirement.HasKey(r => new { r.TeamId, r.PositionTypeId });
+        requirement.Property(r => r.RequiredCount).IsRequired();
+        requirement.HasOne(r => r.Team)
+            .WithMany(t => t.PositionRequirements)
+            .HasForeignKey(r => r.TeamId)
+            .OnDelete(DeleteBehavior.Cascade);
+        requirement.HasOne(r => r.PositionType)
+            .WithMany(p => p.TeamPositionRequirements)
+            .HasForeignKey(r => r.PositionTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        var member = modelBuilder.Entity<TeamMember>();
+        member.ToTable("TeamMembers");
+        member.HasKey(m => new { m.TeamId, m.EmployeeProfileId });
+        member.Property(m => m.AddedDate).IsRequired();
+        member.HasOne(m => m.Team)
+            .WithMany(t => t.Members)
+            .HasForeignKey(m => m.TeamId)
+            .OnDelete(DeleteBehavior.Cascade);
+        member.HasOne(m => m.EmployeeProfile)
+            .WithMany()
+            .HasForeignKey(m => m.EmployeeProfileId)
+            .OnDelete(DeleteBehavior.Restrict);
+        member.HasIndex(m => m.EmployeeProfileId)
+            .HasDatabaseName("IX_TeamMembers_EmployeeProfileId");
+
+        var hidden = modelBuilder.Entity<TeamHiddenProfile>();
+        hidden.ToTable("TeamHiddenProfiles");
+        hidden.HasKey(h => new { h.TeamId, h.EmployeeProfileId });
+        hidden.Property(h => h.HiddenDate).IsRequired();
+        hidden.HasOne(h => h.Team)
+            .WithMany(t => t.HiddenProfiles)
+            .HasForeignKey(h => h.TeamId)
+            .OnDelete(DeleteBehavior.Cascade);
+        hidden.HasOne(h => h.EmployeeProfile)
+            .WithMany()
+            .HasForeignKey(h => h.EmployeeProfileId)
+            .OnDelete(DeleteBehavior.Restrict);
+        hidden.HasIndex(h => h.EmployeeProfileId)
+            .HasDatabaseName("IX_TeamHiddenProfiles_EmployeeProfileId");
     }
 }

@@ -17,6 +17,15 @@
 .brand {
   font-weight: 600;
   letter-spacing: -0.02em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.brand-user {
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: #5c5c66;
 }
 
 .menu {

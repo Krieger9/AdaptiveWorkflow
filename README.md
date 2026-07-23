@@ -51,22 +51,24 @@ Schema is normalized for contractor profiles:
 - `EmployeeProfiles` (FKs to lookups)
 - `EmployeeProfileSkills` (profile ↔ skill)
 
+## Build & run (from repo root)
+
 ```powershell
+# Build only
+.\build-backend.ps1
+.\build-frontend.ps1
+.\build.ps1                    # both
+
+# One-shell local dev (API background + UI foreground)
+.\dev.ps1
+.\dev.ps1 -Build               # build backend first, then run
+.\dev.ps1 -Build -PublishDb    # also publish LocalDB schema
+
+# Schema only
 .\database\publish-local.ps1
 ```
 
-```powershell
-.\database\publish-local.ps1
-```
-
-## Run
-
-```powershell
-dotnet run --project src/AdaptiveTeamBuilderSvc --launch-profile http
-
-cd src/AdaptiveTeamBuilderUI
-npm run dev
-```
+`.\dev.ps1` starts the API on `http://localhost:5106`, waits for health, then runs Vite on `http://localhost:5173`. Ctrl+C stops both.
 
 - UI: http://localhost:5173  
 - Health: http://localhost:5106/health  

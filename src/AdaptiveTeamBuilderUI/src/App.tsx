@@ -24,7 +24,7 @@ import {
 } from './auth/msalConfig'
 import './App.css'
 
-type View = 'home' | 'edit' | 'profiles'
+type View = 'home' | 'edit'
 
 function App() {
   const { instance, accounts } = useMsal()
@@ -203,16 +203,16 @@ function App() {
   return (
     <div className="shell">
       <header className="topbar">
-        <div className="brand">Adaptive Team Builder</div>
+        <div className="brand">
+          Adaptive Team Builder
+          <span className="brand-user">Hello {greetingName(user)}</span>
+        </div>
         <nav className="menu">
           <button type="button" className="linkish" onClick={() => setView('home')}>
             Home
           </button>
-          <button type="button" className="linkish" onClick={() => setView('profiles')}>
-            Profiles
-          </button>
           <button type="button" className="linkish" onClick={openEdit}>
-            Edit profile
+            My account
           </button>
           <button type="button" className="linkish" disabled={busy} onClick={handleSignOut}>
             Sign out
@@ -220,48 +220,14 @@ function App() {
         </nav>
       </header>
 
-      <main className={view === 'profiles' ? 'app wide' : 'app'}>
+      <main className={view === 'home' ? 'app wide' : 'app'}>
         {error && <p className="error">{error}</p>}
 
-        {view === 'home' && (
-          <section className="panel">
-            <h1>Hello {greetingName(user)}</h1>
-            <dl className="meta">
-              <div>
-                <dt>User name</dt>
-                <dd>{user.userName}</dd>
-              </div>
-              <div>
-                <dt>Entra object id</dt>
-                <dd>{user.azureAdObjectId}</dd>
-              </div>
-              <div>
-                <dt>Created</dt>
-                <dd>{new Date(user.createdDate).toLocaleString()}</dd>
-              </div>
-              <div>
-                <dt>Modified</dt>
-                <dd>{new Date(user.modifiedDate).toLocaleString()}</dd>
-              </div>
-              <div>
-                <dt>Last logged in</dt>
-                <dd>
-                  {user.lastLoggedInDate
-                    ? new Date(user.lastLoggedInDate).toLocaleString()
-                    : '—'}
-                </dd>
-              </div>
-            </dl>
-          </section>
-        )}
-
-        {view === 'profiles' && (
-          <ProfilesPage onError={setError} />
-        )}
+        {view === 'home' && <ProfilesPage onError={setError} />}
 
         {view === 'edit' && (
           <section className="panel">
-            <h1>Edit profile</h1>
+            <h1>My account</h1>
             <p className="muted">Update first name, last name, and display name.</p>
             <form onSubmit={handleSaveProfile} className="form">
               <label>

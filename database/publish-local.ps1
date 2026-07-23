@@ -55,6 +55,10 @@ sqlcmd -S $Server -E -Q @"
 IF DB_ID(N'$Database') IS NOT NULL
 BEGIN
     USE [$Database];
+    IF OBJECT_ID(N'dbo.TeamHiddenProfiles', N'U') IS NOT NULL DROP TABLE [dbo].[TeamHiddenProfiles];
+    IF OBJECT_ID(N'dbo.TeamMembers', N'U') IS NOT NULL DROP TABLE [dbo].[TeamMembers];
+    IF OBJECT_ID(N'dbo.TeamPositionRequirements', N'U') IS NOT NULL DROP TABLE [dbo].[TeamPositionRequirements];
+    IF OBJECT_ID(N'dbo.Teams', N'U') IS NOT NULL DROP TABLE [dbo].[Teams];
     IF OBJECT_ID(N'dbo.EmployeeProfileSkills', N'U') IS NOT NULL DROP TABLE [dbo].[EmployeeProfileSkills];
     IF OBJECT_ID(N'dbo.EmployeeProfiles', N'U') IS NOT NULL DROP TABLE [dbo].[EmployeeProfiles];
     IF OBJECT_ID(N'dbo.RoleSpecialties', N'U') IS NOT NULL DROP TABLE [dbo].[RoleSpecialties];

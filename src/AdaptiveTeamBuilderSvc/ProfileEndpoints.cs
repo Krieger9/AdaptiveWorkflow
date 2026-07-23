@@ -23,6 +23,7 @@ public static class ProfileEndpoints
         AdaptiveTeamBuilderDbContext db,
         string? q,
         string? positionTypes,
+        Guid? teamId,
         CancellationToken cancellationToken)
     {
         var selectedTypes = ParsePositionTypes(positionTypes, out var invalidType);
@@ -43,6 +44,15 @@ public static class ProfileEndpoints
         }
 
         var query = db.EmployeeProfiles.AsNoTracking().AsQueryable();
+
+        if (teamId is Guid activeTeamId)
+        {
+            var hiddenIds = db.TeamHiddenProfiles
+                .Where(h => h.TeamId == activeTeamId)
+                .Select(h => h.EmployeeProfileId);
+
+            query = query.Where(p => !hiddenIds.Contains(p.Id));
+        }
 
         if (selectedTypes.Count > 0)
         {

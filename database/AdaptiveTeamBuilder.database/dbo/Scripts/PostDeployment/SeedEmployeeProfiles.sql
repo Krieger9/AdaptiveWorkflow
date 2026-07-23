@@ -2,11 +2,11 @@
 
 IF NOT EXISTS (SELECT 1 FROM [dbo].[PositionTypes])
 BEGIN
-    INSERT INTO [dbo].[PositionTypes] ([Id], [Code], [Name]) VALUES
-    (1, N'Developer', N'Developer'),
-    (2, N'UxDesigner', N'UX Designer'),
-    (3, N'Product', N'Product'),
-    (4, N'QualityAssurance', N'Quality Assurance');
+    INSERT INTO [dbo].[PositionTypes] ([Id], [Code], [Name], [SortOrder]) VALUES
+    (1, N'Developer', N'Developer', 1),
+    (2, N'UxDesigner', N'UX Designer', 2),
+    (3, N'Product', N'Product', 3),
+    (4, N'QualityAssurance', N'Quality Assurance', 4);
 END
 GO
 
