@@ -59,6 +59,17 @@ BEGIN
     IF OBJECT_ID(N'dbo.TeamMembers', N'U') IS NOT NULL DROP TABLE [dbo].[TeamMembers];
     IF OBJECT_ID(N'dbo.TeamPositionRequirements', N'U') IS NOT NULL DROP TABLE [dbo].[TeamPositionRequirements];
     IF OBJECT_ID(N'dbo.Teams', N'U') IS NOT NULL DROP TABLE [dbo].[Teams];
+    IF OBJECT_ID(N'dbo.ContractMilestones', N'U') IS NOT NULL DROP TABLE [dbo].[ContractMilestones];
+    IF OBJECT_ID(N'dbo.ContractDeliverables', N'U') IS NOT NULL DROP TABLE [dbo].[ContractDeliverables];
+    IF OBJECT_ID(N'dbo.ContractConstraints', N'U') IS NOT NULL DROP TABLE [dbo].[ContractConstraints];
+    IF OBJECT_ID(N'dbo.ContractSkills', N'U') IS NOT NULL DROP TABLE [dbo].[ContractSkills];
+    IF OBJECT_ID(N'dbo.Contracts', N'U') IS NOT NULL DROP TABLE [dbo].[Contracts];
+    IF OBJECT_ID(N'dbo.ContractConstraintTypes', N'U') IS NOT NULL DROP TABLE [dbo].[ContractConstraintTypes];
+    IF OBJECT_ID(N'dbo.ContractSkillPriorities', N'U') IS NOT NULL DROP TABLE [dbo].[ContractSkillPriorities];
+    IF OBJECT_ID(N'dbo.ContractEngagementTypes', N'U') IS NOT NULL DROP TABLE [dbo].[ContractEngagementTypes];
+    IF OBJECT_ID(N'dbo.ContractWorkModes', N'U') IS NOT NULL DROP TABLE [dbo].[ContractWorkModes];
+    IF OBJECT_ID(N'dbo.ContractDeliveryRiskLevels', N'U') IS NOT NULL DROP TABLE [dbo].[ContractDeliveryRiskLevels];
+    IF OBJECT_ID(N'dbo.ContractStrategicValueLevels', N'U') IS NOT NULL DROP TABLE [dbo].[ContractStrategicValueLevels];
     IF OBJECT_ID(N'dbo.EmployeeProfileSkills', N'U') IS NOT NULL DROP TABLE [dbo].[EmployeeProfileSkills];
     IF OBJECT_ID(N'dbo.EmployeeProfiles', N'U') IS NOT NULL DROP TABLE [dbo].[EmployeeProfiles];
     IF OBJECT_ID(N'dbo.RoleSpecialties', N'U') IS NOT NULL DROP TABLE [dbo].[RoleSpecialties];

@@ -6,9 +6,13 @@ public class Team
 
     public string Name { get; set; } = string.Empty;
 
+    public Guid ContractId { get; set; }
+
     public DateTime CreatedDate { get; set; }
 
     public DateTime ModifiedDate { get; set; }
+
+    public Contract Contract { get; set; } = null!;
 
     public ICollection<TeamPositionRequirement> PositionRequirements { get; set; } = new List<TeamPositionRequirement>();
 

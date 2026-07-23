@@ -54,6 +54,37 @@
   flex-shrink: 0;
 }
 
+.contract-brief-signals {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.45rem 0.75rem;
+  border-radius: 6px;
+  background: #f5f7fa;
+}
+
+.contract-brief-signals div {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.contract-brief-signals dt {
+  margin: 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #5c5c66;
+}
+
+.contract-brief-signals dd {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1f2430;
+}
+
 .contract-brief-meta {
   display: flex;
   flex-wrap: wrap;
@@ -158,6 +189,10 @@
 }
 
 @media (max-width: 900px) {
+  .contract-brief-signals {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .contract-brief-details {
     grid-template-columns: 1fr;
   }
@@ -165,5 +200,11 @@
   .contract-skill-row {
     grid-template-columns: 1fr;
     gap: 0.25rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .contract-brief-signals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

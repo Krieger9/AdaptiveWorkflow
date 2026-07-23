@@ -199,6 +199,20 @@ export type ContractListItem = {
   workModeName: string
   durationWeeks: number | null
   targetDeliveryDate: string | null
+  estimatedContractValue: number
+  estimatedProfit: number
+  estimatedMarginPercent: number
+  winProbabilityPercent: number
+  deliveryRisk: string
+  deliveryRiskName: string
+  strategicValue: string
+  strategicValueName: string
+  staffingFte: number
+  specialistStaffingNeeded: string | null
+  expectedProfit: number
+  riskAdjustedProfit: number
+  profitPerMonth: number | null
+  profitPerFte: number
   teamCount: number
 }
 
@@ -242,6 +256,20 @@ export type ContractDetail = {
   durationWeeks: number | null
   startDate: string | null
   targetDeliveryDate: string | null
+  estimatedContractValue: number
+  estimatedProfit: number
+  estimatedMarginPercent: number
+  winProbabilityPercent: number
+  deliveryRisk: string
+  deliveryRiskName: string
+  strategicValue: string
+  strategicValueName: string
+  staffingFte: number
+  specialistStaffingNeeded: string | null
+  expectedProfit: number
+  riskAdjustedProfit: number
+  profitPerMonth: number | null
+  profitPerFte: number
   isDefault: boolean
   skills: ContractSkill[]
   constraints: ContractConstraint[]
@@ -360,3 +388,77 @@ export function greetingName(user: User): string {
   }
   return user.userName
 }
+
+export type CollaborationAdviseRequest = {
+  app: {
+    domainDescription: string
+    contractCount: number
+    datasetSummaries: string[]
+  }
+  screen: {
+    screenId: string
+    title: string
+    availableActions: string[]
+  }
+  controls: {
+    controlId: string
+    controlType: string
+    label: string
+    expanded: boolean
+    data: Record<string, string>
+    detailData?: Record<string, string> | null
+  }[]
+  events: {
+    at: string
+    screenId: string
+    type: string
+    controlId?: string | null
+    label?: string | null
+    meta?: Record<string, string> | null
+  }[]
+  tendencies: {
+    appDefaults: string
+    userOverride: string | null
+    updatedAt: string | null
+    source: string
+  }
+}
+
+export type CollaborationAdviseResponse = {
+  promptPreview: string
+  updatedTendencies: {
+    appDefaults: string
+    userOverride: string | null
+    updatedAt: string | null
+    source: string
+  }
+  suggestions: {
+    id: string
+    kind: string
+    label: string
+    targetControlId: string | null
+  }[]
+}
+
+export type CollaborationTendenciesResponse = {
+  tendencies: CollaborationAdviseResponse['updatedTendencies']
+}
+
+export async function getCollaborationTendencies(): Promise<CollaborationTendenciesResponse> {
+  const response = await fetch(`${apiBaseUrl}/api/collaboration/tendencies`, {
+    headers: await authHeaders(),
+  })
+  return parseJson<CollaborationTendenciesResponse>(response)
+}
+
+export async function adviseCollaboration(
+  request: CollaborationAdviseRequest,
+): Promise<CollaborationAdviseResponse> {
+  const response = await fetch(`${apiBaseUrl}/api/collaboration/advise`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify(request),
+  })
+  return parseJson<CollaborationAdviseResponse>(response)
+}
+

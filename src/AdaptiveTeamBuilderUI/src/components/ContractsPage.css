@@ -11,6 +11,135 @@
   letter-spacing: -0.02em;
 }
 
+.contracts-page-tools {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.contracts-ai-suggestion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #c9d4e3;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f4f7fb 0%, #eef3f8 100%);
+}
+
+.contracts-ai-suggestion.ready {
+  border-color: #7f9dbb;
+  box-shadow: 0 0 0 1px rgba(59, 79, 102, 0.08);
+}
+
+.contracts-ai-suggestion.satisfied {
+  border-color: #c5d6c8;
+  background: linear-gradient(180deg, #f5f8f5 0%, #eef4ef 100%);
+}
+
+.contracts-ai-suggestion-copy {
+  display: grid;
+  gap: 0.35rem;
+  min-width: min(100%, 18rem);
+  flex: 1;
+}
+
+.contracts-ai-suggestion-kicker {
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #3b4f66;
+}
+
+.contracts-ai-suggestion-copy p {
+  margin: 0;
+}
+
+.contracts-ai-suggestion-hint {
+  font-size: 0.85rem;
+}
+
+.contracts-ai-suggestion-binding {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.55rem;
+  font-size: 0.92rem;
+}
+
+.contracts-ai-suggestion-binding kbd,
+.contract-select-suggested-badge kbd {
+  display: inline-block;
+  padding: 0.12rem 0.45rem;
+  border: 1px solid #9aa8b8;
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: #fff;
+  font: 650 0.78rem/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: #1f2a37;
+}
+
+.contracts-collab-suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.contracts-collab-suggestions li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+}
+
+.contracts-collab-debug {
+  border: 1px solid #d8d8de;
+  border-radius: 8px;
+  background: #fafafb;
+  padding: 0.75rem 1rem;
+}
+
+.contracts-collab-debug summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.contracts-collab-debug-body {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.contracts-collab-debug-body h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.contracts-collab-debug-body pre {
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: 6px;
+  background: #111827;
+  color: #e5e7eb;
+  overflow: auto;
+  max-height: 22rem;
+  white-space: pre-wrap;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.contracts-collab-debug-body ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
 .contracts-empty {
   border: 1px dashed #c5c5cd;
   border-radius: 8px;
@@ -26,9 +155,11 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
   gap: 1rem;
+  align-items: start;
 }
 
 .contract-select-card {
+  position: relative;
   width: 100%;
   text-align: left;
   display: grid;
@@ -37,16 +168,36 @@
   border: 1px solid #d8d8de;
   border-radius: 8px;
   background: #fff;
-  cursor: pointer;
-  font: inherit;
   color: inherit;
-  min-height: 12rem;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  min-height: 14rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-.contract-select-card:hover {
+.contract-select-card:hover,
+.contract-select-card.expanded {
   border-color: #1a4f8b;
   box-shadow: 0 0 0 1px #1a4f8b;
+}
+
+.contract-select-card.suggested {
+  border-color: #3b6ea5;
+  background: #f7fafe;
+  box-shadow: 0 0 0 1px #3b6ea5, 0 10px 24px rgba(26, 79, 139, 0.08);
+}
+
+.contract-select-suggested-badge {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: #e8f0f8;
+  color: #1f3d5c;
+  font-size: 0.75rem;
+  font-weight: 650;
 }
 
 .contract-select-kicker {
@@ -63,11 +214,42 @@
   letter-spacing: -0.01em;
 }
 
-.contract-select-card p {
+.contract-select-card > p {
   margin: 0;
   color: #3a3a42;
   font-size: 0.95rem;
   line-height: 1.4;
+}
+
+.contract-select-signals {
+  margin: 0.15rem 0 0;
+  padding: 0.55rem 0.65rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem 0.65rem;
+  border-radius: 6px;
+  background: #f5f7fa;
+}
+
+.contract-select-signals div {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.contract-select-signals dt {
+  margin: 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #5c5c66;
+}
+
+.contract-select-signals dd {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1f2430;
 }
 
 .contract-select-meta {
@@ -83,4 +265,97 @@
   border-radius: 4px;
   background: #eef1f5;
   color: #2f3640;
+}
+
+.contract-select-details {
+  display: grid;
+  gap: 0.75rem;
+  border-top: 1px solid #e4e4ea;
+  padding-top: 0.75rem;
+  margin-top: 0.15rem;
+}
+
+.contract-select-details-loading {
+  margin: 0;
+  color: #5c5c66;
+  font-size: 0.9rem;
+}
+
+.contract-select-details h3 {
+  margin: 0 0 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.contract-select-details p,
+.contract-select-details li {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: #3a3a42;
+}
+
+.contract-select-details ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.contract-select-skill-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.contract-select-skill-chips span {
+  font-size: 0.8rem;
+  padding: 0.18rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid #9bb7d6;
+  background: #f3f7fb;
+  color: #2f3640;
+}
+
+.contract-select-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-end;
+  margin-top: 0.2rem;
+}
+
+.contract-select-actions button {
+  font: inherit;
+  padding: 0.55rem 0.85rem;
+  border-radius: 6px;
+  border: 1px solid #1a4f8b;
+  background: #1a4f8b;
+  color: #fff;
+  cursor: pointer;
+}
+
+.contract-select-actions .secondary {
+  background: #fff;
+  border-color: #c5c5cd;
+  color: #2f3640;
+}
+
+.contract-select-actions .secondary:hover {
+  border-color: #1a4f8b;
+  color: #1a4f8b;
+}
+
+@media (max-width: 480px) {
+  .contract-select-signals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .contract-select-actions {
+    justify-content: stretch;
+  }
+
+  .contract-select-actions button {
+    flex: 1 1 auto;
+  }
 }

@@ -1,6 +1,6 @@
 namespace AdaptiveTeamBuilder.Data.Contracts;
 
-public record TeamListItemDto(Guid Id, string Name);
+public record TeamListItemDto(Guid Id, string Name, Guid ContractId);
 
 public record TeamRequirementDto(
     string PositionType,
@@ -21,13 +21,14 @@ public record TeamMemberDto(
 public record TeamDetailDto(
     Guid Id,
     string Name,
+    Guid ContractId,
     DateTime CreatedDate,
     DateTime ModifiedDate,
     IReadOnlyList<TeamRequirementDto> Requirements,
     IReadOnlyList<TeamMemberDto> Members,
     IReadOnlyList<Guid> HiddenEmployeeProfileIds);
 
-public record CreateTeamRequest(string Name);
+public record CreateTeamRequest(string Name, Guid ContractId);
 
 public record RenameTeamRequest(string Name);
 

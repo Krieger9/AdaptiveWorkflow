@@ -28,12 +28,25 @@ public static class TeamEndpoints
     }
 
     private static async Task<IResult> ListTeamsAsync(
+        Guid? contractId,
         AdaptiveTeamBuilderDbContext db,
         CancellationToken cancellationToken)
     {
+        if (contractId is null)
+        {
+            return Results.BadRequest(new { error = "contractId query parameter is required." });
+        }
+
+        var contractExists = await db.Contracts.AnyAsync(c => c.Id == contractId, cancellationToken);
+        if (!contractExists)
+        {
+            return Results.NotFound(new { error = "Contract was not found." });
+        }
+
         var teams = await db.Teams.AsNoTracking()
+            .Where(t => t.ContractId == contractId)
             .OrderBy(t => t.Name)
-            .Select(t => new TeamListItemDto(t.Id, t.Name))
+            .Select(t => new TeamListItemDto(t.Id, t.Name, t.ContractId))
             .ToListAsync(cancellationToken);
 
         return Results.Ok(teams);
@@ -50,9 +63,17 @@ public static class TeamEndpoints
             return Results.BadRequest(new { error = "Team name is required." });
         }
 
-        if (await db.Teams.AnyAsync(t => t.Name == name, cancellationToken))
+        var contractExists = await db.Contracts.AnyAsync(c => c.Id == request.ContractId, cancellationToken);
+        if (!contractExists)
         {
-            return Results.Conflict(new { error = $"A team named '{name}' already exists." });
+            return Results.BadRequest(new { error = "Contract was not found." });
+        }
+
+        if (await db.Teams.AnyAsync(
+                t => t.ContractId == request.ContractId && t.Name == name,
+                cancellationToken))
+        {
+            return Results.Conflict(new { error = $"A team named '{name}' already exists for this contract." });
         }
 
         var now = DateTime.UtcNow;
@@ -64,6 +85,7 @@ public static class TeamEndpoints
         {
             Id = Guid.NewGuid(),
             Name = name,
+            ContractId = request.ContractId,
             CreatedDate = now,
             ModifiedDate = now,
             PositionRequirements = positionTypes
@@ -108,9 +130,11 @@ public static class TeamEndpoints
             return Results.NotFound();
         }
 
-        if (await db.Teams.AnyAsync(t => t.Name == name && t.Id != teamId, cancellationToken))
+        if (await db.Teams.AnyAsync(
+                t => t.ContractId == team.ContractId && t.Name == name && t.Id != teamId,
+                cancellationToken))
         {
-            return Results.Conflict(new { error = $"A team named '{name}' already exists." });
+            return Results.Conflict(new { error = $"A team named '{name}' already exists for this contract." });
         }
 
         team.Name = name;
@@ -400,6 +424,7 @@ public static class TeamEndpoints
         return new TeamDetailDto(
             team.Id,
             team.Name,
+            team.ContractId,
             team.CreatedDate,
             team.ModifiedDate,
             requirementDtos,

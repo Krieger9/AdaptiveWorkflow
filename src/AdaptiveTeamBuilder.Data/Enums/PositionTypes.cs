@@ -61,3 +61,47 @@ public static class ProductRoleSpecialties
         ProductOwner,
     ];
 }
+
+public static class ContractWorkModes
+{
+    public const string Remote = "Remote";
+    public const string Hybrid = "Hybrid";
+    public const string Onsite = "Onsite";
+}
+
+public static class ContractEngagementTypes
+{
+    public const string FixedBid = "FixedBid";
+    public const string TimeAndMaterials = "TimeAndMaterials";
+    public const string StaffAugmentation = "StaffAugmentation";
+}
+
+public static class ContractSkillPriorities
+{
+    public const string MustHave = "MustHave";
+    public const string NiceToHave = "NiceToHave";
+}
+
+public static class ContractConstraintTypes
+{
+    public const string OnshoreOnly = "OnshoreOnly";
+    public const string SecurityClearance = "SecurityClearance";
+    public const string LegacyIntegration = "LegacyIntegration";
+    public const string ComplianceAudit = "ComplianceAudit";
+    public const string FixedBudgetBand = "FixedBudgetBand";
+}
+
+public static class ContractDeliveryRiskLevels
+{
+    public const string Low = "Low";
+    public const string Medium = "Medium";
+    public const string High = "High";
+}
+
+public static class ContractStrategicValueLevels
+{
+    public const string Low = "Low";
+    public const string Medium = "Medium";
+    public const string High = "High";
+    public const string VeryHigh = "VeryHigh";
+}

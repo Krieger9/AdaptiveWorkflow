@@ -23,6 +23,22 @@ function formatDate(value: string | null): string | null {
   })
 }
 
+function formatMoney(value: number): string {
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(value)
+}
+
+function formatPercent(value: number): string {
+  return `${Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1)}%`
+}
+
+function formatFte(value: number): string {
+  return `${Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1)} FTE`
+}
+
 export function ContractBrief({ contract, loading, onChangeContract }: ContractBriefProps) {
   const [expanded, setExpanded] = useState(false)
 
@@ -83,6 +99,33 @@ export function ContractBrief({ contract, loading, onChangeContract }: ContractB
         </div>
       </div>
 
+      <dl className="contract-brief-signals">
+        <div>
+          <dt>Value</dt>
+          <dd>{formatMoney(contract.estimatedContractValue)}</dd>
+        </div>
+        <div>
+          <dt>Profit</dt>
+          <dd>{formatMoney(contract.estimatedProfit)}</dd>
+        </div>
+        <div>
+          <dt>Margin</dt>
+          <dd>{formatPercent(contract.estimatedMarginPercent)}</dd>
+        </div>
+        <div>
+          <dt>Win prob.</dt>
+          <dd>{formatPercent(contract.winProbabilityPercent)}</dd>
+        </div>
+        <div>
+          <dt>Delivery risk</dt>
+          <dd>{contract.deliveryRiskName}</dd>
+        </div>
+        <div>
+          <dt>Strategic</dt>
+          <dd>{contract.strategicValueName}</dd>
+        </div>
+      </dl>
+
       <div className="contract-brief-meta">
         <span className="contract-chip">{contract.clientName}</span>
         <span className="contract-chip">{contract.engagementTypeName}</span>
@@ -125,6 +168,24 @@ export function ContractBrief({ contract, loading, onChangeContract }: ContractB
 
       {expanded && (
         <div className="contract-brief-details">
+          <div>
+            <h3>Capacity signals</h3>
+            <ul>
+              <li>
+                <strong>Staffing</strong> — {formatFte(contract.staffingFte)}
+              </li>
+              {contract.specialistStaffingNeeded && (
+                <li>
+                  <strong>Specialists</strong> — {contract.specialistStaffingNeeded}
+                </li>
+              )}
+              {contract.durationWeeks != null && (
+                <li>
+                  <strong>Duration</strong> — {contract.durationWeeks} weeks
+                </li>
+              )}
+            </ul>
+          </div>
           <div>
             <h3>Scope</h3>
             <p>{contract.scopeSummary}</p>

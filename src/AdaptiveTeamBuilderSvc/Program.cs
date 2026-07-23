@@ -67,6 +67,8 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod());
 });
 
+builder.Services.AddSingleton<ICollaborationAdvisor, StubCollaborationAdvisor>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -74,7 +76,14 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
+// Skip HTTPS redirection in Development so the SPA on http://localhost:5173
+// can call http://localhost:5106 without a CORS-breaking 307 to https://7199
+// (common when debugging the API in Visual Studio with the https profile).
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors("UiDev");
 app.UseAuthentication();
 app.UseAuthorization();
@@ -87,5 +96,7 @@ app.MapAuthEndpoints();
 app.MapUserEndpoints();
 app.MapProfileEndpoints();
 app.MapTeamEndpoints();
+app.MapContractEndpoints();
+app.MapCollaborationEndpoints();
 
 app.Run();

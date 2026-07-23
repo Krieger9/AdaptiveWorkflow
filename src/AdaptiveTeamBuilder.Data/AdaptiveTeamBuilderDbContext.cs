@@ -12,6 +12,8 @@ public class AdaptiveTeamBuilderDbContext : DbContext
 
     public DbSet<User> Users => Set<User>();
 
+    public DbSet<UserCollaborationState> UserCollaborationStates => Set<UserCollaborationState>();
+
     public DbSet<PositionType> PositionTypes => Set<PositionType>();
 
     public DbSet<ExperienceLevel> ExperienceLevels => Set<ExperienceLevel>();
@@ -32,11 +34,34 @@ public class AdaptiveTeamBuilderDbContext : DbContext
 
     public DbSet<TeamHiddenProfile> TeamHiddenProfiles => Set<TeamHiddenProfile>();
 
+    public DbSet<ContractWorkMode> ContractWorkModes => Set<ContractWorkMode>();
+
+    public DbSet<ContractEngagementType> ContractEngagementTypes => Set<ContractEngagementType>();
+
+    public DbSet<ContractSkillPriority> ContractSkillPriorities => Set<ContractSkillPriority>();
+
+    public DbSet<ContractConstraintType> ContractConstraintTypes => Set<ContractConstraintType>();
+
+    public DbSet<ContractDeliveryRiskLevel> ContractDeliveryRiskLevels => Set<ContractDeliveryRiskLevel>();
+
+    public DbSet<ContractStrategicValueLevel> ContractStrategicValueLevels => Set<ContractStrategicValueLevel>();
+
+    public DbSet<Contract> Contracts => Set<Contract>();
+
+    public DbSet<ContractSkill> ContractSkills => Set<ContractSkill>();
+
+    public DbSet<ContractConstraint> ContractConstraints => Set<ContractConstraint>();
+
+    public DbSet<ContractDeliverable> ContractDeliverables => Set<ContractDeliverable>();
+
+    public DbSet<ContractMilestone> ContractMilestones => Set<ContractMilestone>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ConfigureUser(modelBuilder);
         ConfigureLookups(modelBuilder);
         ConfigureEmployeeProfile(modelBuilder);
+        ConfigureContracts(modelBuilder);
         ConfigureTeams(modelBuilder);
     }
 
@@ -62,6 +87,16 @@ public class AdaptiveTeamBuilderDbContext : DbContext
         user.HasIndex(u => u.UserName)
             .IsUnique()
             .HasDatabaseName("UQ_Users_UserName");
+
+        var collab = modelBuilder.Entity<UserCollaborationState>();
+        collab.ToTable("UserCollaborationStates");
+        collab.HasKey(c => c.UserId);
+        collab.Property(c => c.TendencySource).IsRequired().HasMaxLength(32);
+        collab.Property(c => c.UpdatedAt).IsRequired();
+        collab.HasOne(c => c.User)
+            .WithOne()
+            .HasForeignKey<UserCollaborationState>(c => c.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 
     private static void ConfigureLookups(ModelBuilder modelBuilder)
@@ -159,15 +194,174 @@ public class AdaptiveTeamBuilderDbContext : DbContext
             .HasDatabaseName("IX_EmployeeProfileSkills_SkillId");
     }
 
+    private static void ConfigureContracts(ModelBuilder modelBuilder)
+    {
+        var workMode = modelBuilder.Entity<ContractWorkMode>();
+        workMode.ToTable("ContractWorkModes");
+        workMode.HasKey(x => x.Id);
+        workMode.Property(x => x.Id).ValueGeneratedNever();
+        workMode.Property(x => x.Code).IsRequired().HasMaxLength(32);
+        workMode.Property(x => x.Name).IsRequired().HasMaxLength(100);
+        workMode.Property(x => x.SortOrder).IsRequired();
+        workMode.HasIndex(x => x.Code).IsUnique().HasDatabaseName("UQ_ContractWorkModes_Code");
+
+        var engagement = modelBuilder.Entity<ContractEngagementType>();
+        engagement.ToTable("ContractEngagementTypes");
+        engagement.HasKey(x => x.Id);
+        engagement.Property(x => x.Id).ValueGeneratedNever();
+        engagement.Property(x => x.Code).IsRequired().HasMaxLength(32);
+        engagement.Property(x => x.Name).IsRequired().HasMaxLength(100);
+        engagement.Property(x => x.SortOrder).IsRequired();
+        engagement.HasIndex(x => x.Code).IsUnique().HasDatabaseName("UQ_ContractEngagementTypes_Code");
+
+        var priority = modelBuilder.Entity<ContractSkillPriority>();
+        priority.ToTable("ContractSkillPriorities");
+        priority.HasKey(x => x.Id);
+        priority.Property(x => x.Id).ValueGeneratedNever();
+        priority.Property(x => x.Code).IsRequired().HasMaxLength(32);
+        priority.Property(x => x.Name).IsRequired().HasMaxLength(100);
+        priority.Property(x => x.SortOrder).IsRequired();
+        priority.HasIndex(x => x.Code).IsUnique().HasDatabaseName("UQ_ContractSkillPriorities_Code");
+
+        var constraintType = modelBuilder.Entity<ContractConstraintType>();
+        constraintType.ToTable("ContractConstraintTypes");
+        constraintType.HasKey(x => x.Id);
+        constraintType.Property(x => x.Id).ValueGeneratedNever();
+        constraintType.Property(x => x.Code).IsRequired().HasMaxLength(64);
+        constraintType.Property(x => x.Name).IsRequired().HasMaxLength(100);
+        constraintType.Property(x => x.SortOrder).IsRequired();
+        constraintType.HasIndex(x => x.Code).IsUnique().HasDatabaseName("UQ_ContractConstraintTypes_Code");
+
+        var deliveryRisk = modelBuilder.Entity<ContractDeliveryRiskLevel>();
+        deliveryRisk.ToTable("ContractDeliveryRiskLevels");
+        deliveryRisk.HasKey(x => x.Id);
+        deliveryRisk.Property(x => x.Id).ValueGeneratedNever();
+        deliveryRisk.Property(x => x.Code).IsRequired().HasMaxLength(32);
+        deliveryRisk.Property(x => x.Name).IsRequired().HasMaxLength(100);
+        deliveryRisk.Property(x => x.SortOrder).IsRequired();
+        deliveryRisk.Property(x => x.ConfidenceFactor).HasPrecision(4, 2);
+        deliveryRisk.HasIndex(x => x.Code).IsUnique().HasDatabaseName("UQ_ContractDeliveryRiskLevels_Code");
+
+        var strategicValue = modelBuilder.Entity<ContractStrategicValueLevel>();
+        strategicValue.ToTable("ContractStrategicValueLevels");
+        strategicValue.HasKey(x => x.Id);
+        strategicValue.Property(x => x.Id).ValueGeneratedNever();
+        strategicValue.Property(x => x.Code).IsRequired().HasMaxLength(32);
+        strategicValue.Property(x => x.Name).IsRequired().HasMaxLength(100);
+        strategicValue.Property(x => x.SortOrder).IsRequired();
+        strategicValue.HasIndex(x => x.Code).IsUnique().HasDatabaseName("UQ_ContractStrategicValueLevels_Code");
+
+        var contract = modelBuilder.Entity<Contract>();
+        contract.ToTable("Contracts");
+        contract.HasKey(c => c.Id);
+        contract.Property(c => c.Code).IsRequired().HasMaxLength(64);
+        contract.Property(c => c.Title).IsRequired().HasMaxLength(200);
+        contract.Property(c => c.ClientName).IsRequired().HasMaxLength(200);
+        contract.Property(c => c.OutcomeSummary).IsRequired().HasMaxLength(500);
+        contract.Property(c => c.ScopeSummary).IsRequired().HasMaxLength(2000);
+        contract.Property(c => c.EstimatedContractValue).HasPrecision(18, 2);
+        contract.Property(c => c.EstimatedProfit).HasPrecision(18, 2);
+        contract.Property(c => c.EstimatedMarginPercent).HasPrecision(5, 2);
+        contract.Property(c => c.WinProbabilityPercent).HasPrecision(5, 2);
+        contract.Property(c => c.StaffingFte).HasPrecision(6, 1);
+        contract.Property(c => c.SpecialistStaffingNeeded).HasMaxLength(200);
+        contract.Property(c => c.IsDefault).IsRequired();
+        contract.Property(c => c.CreatedDate).IsRequired();
+        contract.Property(c => c.ModifiedDate).IsRequired();
+        contract.HasIndex(c => c.Code).IsUnique().HasDatabaseName("UQ_Contracts_Code");
+        contract.HasOne(c => c.EngagementType)
+            .WithMany(e => e.Contracts)
+            .HasForeignKey(c => c.EngagementTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+        contract.HasOne(c => c.WorkMode)
+            .WithMany(w => w.Contracts)
+            .HasForeignKey(c => c.WorkModeId)
+            .OnDelete(DeleteBehavior.Restrict);
+        contract.HasOne(c => c.DeliveryRisk)
+            .WithMany(r => r.Contracts)
+            .HasForeignKey(c => c.DeliveryRiskId)
+            .OnDelete(DeleteBehavior.Restrict);
+        contract.HasOne(c => c.StrategicValue)
+            .WithMany(s => s.Contracts)
+            .HasForeignKey(c => c.StrategicValueId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        var skill = modelBuilder.Entity<ContractSkill>();
+        skill.ToTable("ContractSkills");
+        skill.HasKey(x => new { x.ContractId, x.SkillId });
+        skill.HasOne(x => x.Contract)
+            .WithMany(c => c.Skills)
+            .HasForeignKey(x => x.ContractId)
+            .OnDelete(DeleteBehavior.Cascade);
+        skill.HasOne(x => x.Skill)
+            .WithMany()
+            .HasForeignKey(x => x.SkillId)
+            .OnDelete(DeleteBehavior.Restrict);
+        skill.HasOne(x => x.Priority)
+            .WithMany(p => p.ContractSkills)
+            .HasForeignKey(x => x.PriorityId)
+            .OnDelete(DeleteBehavior.Restrict);
+        skill.HasIndex(x => x.SkillId).HasDatabaseName("IX_ContractSkills_SkillId");
+        skill.HasIndex(x => x.PriorityId).HasDatabaseName("IX_ContractSkills_PriorityId");
+
+        var constraint = modelBuilder.Entity<ContractConstraint>();
+        constraint.ToTable("ContractConstraints");
+        constraint.HasKey(x => new { x.ContractId, x.ConstraintTypeId });
+        constraint.HasOne(x => x.Contract)
+            .WithMany(c => c.Constraints)
+            .HasForeignKey(x => x.ContractId)
+            .OnDelete(DeleteBehavior.Cascade);
+        constraint.HasOne(x => x.ConstraintType)
+            .WithMany(t => t.ContractConstraints)
+            .HasForeignKey(x => x.ConstraintTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+        constraint.HasIndex(x => x.ConstraintTypeId)
+            .HasDatabaseName("IX_ContractConstraints_ConstraintTypeId");
+
+        var deliverable = modelBuilder.Entity<ContractDeliverable>();
+        deliverable.ToTable("ContractDeliverables");
+        deliverable.HasKey(d => d.Id);
+        deliverable.Property(d => d.Title).IsRequired().HasMaxLength(200);
+        deliverable.Property(d => d.Detail).HasMaxLength(500);
+        deliverable.Property(d => d.SortOrder).IsRequired();
+        deliverable.HasOne(d => d.Contract)
+            .WithMany(c => c.Deliverables)
+            .HasForeignKey(d => d.ContractId)
+            .OnDelete(DeleteBehavior.Cascade);
+        deliverable.HasIndex(d => new { d.ContractId, d.SortOrder })
+            .HasDatabaseName("IX_ContractDeliverables_ContractId_SortOrder");
+
+        var milestone = modelBuilder.Entity<ContractMilestone>();
+        milestone.ToTable("ContractMilestones");
+        milestone.HasKey(m => m.Id);
+        milestone.Property(m => m.Name).IsRequired().HasMaxLength(200);
+        milestone.Property(m => m.Description).HasMaxLength(500);
+        milestone.Property(m => m.SortOrder).IsRequired();
+        milestone.HasOne(m => m.Contract)
+            .WithMany(c => c.Milestones)
+            .HasForeignKey(m => m.ContractId)
+            .OnDelete(DeleteBehavior.Cascade);
+        milestone.HasIndex(m => new { m.ContractId, m.SortOrder })
+            .HasDatabaseName("IX_ContractMilestones_ContractId_SortOrder");
+    }
+
     private static void ConfigureTeams(ModelBuilder modelBuilder)
     {
         var team = modelBuilder.Entity<Team>();
         team.ToTable("Teams");
         team.HasKey(t => t.Id);
         team.Property(t => t.Name).IsRequired().HasMaxLength(200);
+        team.Property(t => t.ContractId).IsRequired();
         team.Property(t => t.CreatedDate).IsRequired();
         team.Property(t => t.ModifiedDate).IsRequired();
-        team.HasIndex(t => t.Name).IsUnique().HasDatabaseName("UQ_Teams_Name");
+        team.HasIndex(t => new { t.ContractId, t.Name })
+            .IsUnique()
+            .HasDatabaseName("UQ_Teams_ContractId_Name");
+        team.HasIndex(t => t.ContractId).HasDatabaseName("IX_Teams_ContractId");
+        team.HasOne(t => t.Contract)
+            .WithMany(c => c.Teams)
+            .HasForeignKey(t => t.ContractId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         var requirement = modelBuilder.Entity<TeamPositionRequirement>();
         requirement.ToTable("TeamPositionRequirements");

@@ -150,3 +150,271 @@ BEGIN
     SELECT @id13, [Id] FROM [dbo].[Skills] WHERE [Name] IN (N'Test Architecture', N'Performance', N'Security Testing', N'Coaching');
 END
 GO
+
+-- Contract lookups and demo engagement brief (idempotent).
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[ContractWorkModes])
+BEGIN
+    INSERT INTO [dbo].[ContractWorkModes] ([Id], [Code], [Name], [SortOrder]) VALUES
+    (1, N'Remote', N'Remote', 1),
+    (2, N'Hybrid', N'Hybrid', 2),
+    (3, N'Onsite', N'Onsite', 3);
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[ContractEngagementTypes])
+BEGIN
+    INSERT INTO [dbo].[ContractEngagementTypes] ([Id], [Code], [Name], [SortOrder]) VALUES
+    (1, N'FixedBid', N'Fixed bid', 1),
+    (2, N'TimeAndMaterials', N'Time and materials', 2),
+    (3, N'StaffAugmentation', N'Staff augmentation', 3);
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[ContractSkillPriorities])
+BEGIN
+    INSERT INTO [dbo].[ContractSkillPriorities] ([Id], [Code], [Name], [SortOrder]) VALUES
+    (1, N'MustHave', N'Must have', 1),
+    (2, N'NiceToHave', N'Nice to have', 2);
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[ContractConstraintTypes])
+BEGIN
+    INSERT INTO [dbo].[ContractConstraintTypes] ([Id], [Code], [Name], [SortOrder]) VALUES
+    (1, N'OnshoreOnly', N'Onshore only', 1),
+    (2, N'SecurityClearance', N'Security clearance', 2),
+    (3, N'LegacyIntegration', N'Legacy integration', 3),
+    (4, N'ComplianceAudit', N'Compliance audit', 4),
+    (5, N'FixedBudgetBand', N'Fixed budget band', 5);
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[ContractDeliveryRiskLevels])
+BEGIN
+    INSERT INTO [dbo].[ContractDeliveryRiskLevels] ([Id], [Code], [Name], [SortOrder], [ConfidenceFactor]) VALUES
+    (1, N'Low', N'Low', 1, 0.95),
+    (2, N'Medium', N'Medium', 2, 0.80),
+    (3, N'High', N'High', 3, 0.60);
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[ContractStrategicValueLevels])
+BEGIN
+    INSERT INTO [dbo].[ContractStrategicValueLevels] ([Id], [Code], [Name], [SortOrder]) VALUES
+    (1, N'Low', N'Low', 1),
+    (2, N'Medium', N'Medium', 2),
+    (3, N'High', N'High', 3),
+    (4, N'VeryHigh', N'Very high', 4);
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[Contracts])
+BEGIN
+    DECLARE @now DATETIME2(7) = SYSUTCDATETIME();
+    DECLARE @startDate DATE = DATEFROMPARTS(YEAR(SYSUTCDATETIME()), MONTH(SYSUTCDATETIME()), 1);
+
+    DECLARE @claimsId UNIQUEIDENTIFIER = '11111111-1111-1111-1111-111111111111';
+    DECLARE @mobileId UNIQUEIDENTIFIER = '22222222-2222-2222-2222-222222222222';
+    DECLARE @analyticsId UNIQUEIDENTIFIER = '33333333-3333-3333-3333-333333333333';
+
+    DECLARE @claimsTarget DATE = DATEADD(WEEK, 26, @startDate);
+    DECLARE @mobileTarget DATE = DATEADD(WEEK, 16, @startDate);
+    DECLARE @analyticsTarget DATE = DATEADD(WEEK, 32, @startDate);
+
+    INSERT INTO [dbo].[Contracts]
+    (
+        [Id], [Code], [Title], [ClientName], [OutcomeSummary], [ScopeSummary],
+        [EngagementTypeId], [WorkModeId], [DurationWeeks], [StartDate], [TargetDeliveryDate],
+        [EstimatedContractValue], [EstimatedProfit], [EstimatedMarginPercent], [WinProbabilityPercent],
+        [DeliveryRiskId], [StrategicValueId], [StaffingFte], [SpecialistStaffingNeeded],
+        [IsDefault], [CreatedDate], [ModifiedDate]
+    )
+    VALUES
+    (
+        @claimsId,
+        N'NW-CLAIMS-2026',
+        N'Northwind Claims Modernization',
+        N'Northwind Insurance',
+        N'Replace legacy claims intake with a cloud-native portal and APIs without disrupting adjuster workflows.',
+        N'Deliver a claims intake portal, modernized service APIs, and cutover from the mainframe batch feed. Team must balance greenfield UX with brittle legacy integrations, tight audit requirements, and a fixed delivery window.',
+        1, -- FixedBid
+        2, -- Hybrid
+        26,
+        @startDate,
+        @claimsTarget,
+        3200000.00, -- high revenue / strategic stretch
+        480000.00,
+        15.00,
+        80.00,
+        2, -- Medium risk
+        3, -- High strategic
+        12.0,
+        N'2 claims domain architects',
+        1,
+        @now,
+        @now
+    ),
+    (
+        @mobileId,
+        N'CT-MOBILE-2026',
+        N'Contoso Retail Mobile Refresh',
+        N'Contoso Retail',
+        N'Rebuild the shopper mobile app with faster checkout and accessible browsing across iOS and Android.',
+        N'Deliver a React Native storefront refresh, API BFF for catalog/cart, and a staged rollout. Emphasis on UX quality, performance budgets, and store release cadence under time-and-materials.',
+        2, -- TimeAndMaterials
+        1, -- Remote
+        16,
+        @startDate,
+        @mobileTarget,
+        1800000.00, -- strong margin / high certainty
+        450000.00,
+        25.00,
+        95.00,
+        1, -- Low risk
+        2, -- Medium strategic
+        8.0,
+        N'1 accessibility lead',
+        0,
+        @now,
+        @now
+    ),
+    (
+        @analyticsId,
+        N'FB-ANALYTICS-2026',
+        N'Fabrikam Analytics Hub',
+        N'Fabrikam Manufacturing',
+        N'Stand up a governed analytics platform that turns plant and ERP telemetry into trusted operational dashboards.',
+        N'Deliver ingestion pipelines, a curated warehouse layer, and role-based dashboards for plant ops. Constraints include onshore delivery, compliance audit readiness, and integration with aging ERP extracts.',
+        3, -- StaffAugmentation
+        2, -- Hybrid
+        32,
+        @startDate,
+        @analyticsTarget,
+        2600000.00, -- balanced profit with specialist demand / higher risk
+        572000.00,
+        22.00,
+        65.00,
+        3, -- High risk
+        4, -- Very high strategic
+        10.0,
+        N'3 data platform architects',
+        0,
+        @now,
+        @now
+    );
+
+    -- Northwind claims skills / constraints / deliverables / milestones
+    INSERT INTO [dbo].[ContractSkills] ([ContractId], [SkillId], [PriorityId])
+    SELECT @claimsId, [Id], 1 FROM [dbo].[Skills]
+    WHERE [Name] IN (N'.NET', N'C#', N'React', N'TypeScript', N'SQL Server', N'Azure');
+
+    INSERT INTO [dbo].[ContractSkills] ([ContractId], [SkillId], [PriorityId])
+    SELECT @claimsId, [Id], 2 FROM [dbo].[Skills]
+    WHERE [Name] IN (N'Kafka', N'Docker', N'Playwright', N'Accessibility', N'System Design');
+
+    INSERT INTO [dbo].[ContractConstraints] ([ContractId], [ConstraintTypeId]) VALUES
+    (@claimsId, 1), (@claimsId, 2), (@claimsId, 3), (@claimsId, 5);
+
+    INSERT INTO [dbo].[ContractDeliverables] ([Id], [ContractId], [SortOrder], [Title], [Detail]) VALUES
+    (NEWID(), @claimsId, 1, N'Claims intake portal MVP', N'Adjuster and claimant flows for FNOL with role-based access.'),
+    (NEWID(), @claimsId, 2, N'Claims domain APIs', N'Read/write services for intake, status, and document metadata.'),
+    (NEWID(), @claimsId, 3, N'Legacy feed cutover plan', N'Parallel-run strategy from mainframe batch to event-friendly APIs.'),
+    (NEWID(), @claimsId, 4, N'UAT package and runbooks', N'Test evidence, rollback steps, and ops handover notes.');
+
+    INSERT INTO [dbo].[ContractMilestones] ([Id], [ContractId], [SortOrder], [Name], [TargetDate], [Description]) VALUES
+    (NEWID(), @claimsId, 1, N'Discovery complete', DATEADD(WEEK, 4, @startDate), N'Stakeholder map, integration inventory, and risk register.'),
+    (NEWID(), @claimsId, 2, N'Portal MVP demo', DATEADD(WEEK, 12, @startDate), N'End-to-end FNOL happy path in staging.'),
+    (NEWID(), @claimsId, 3, N'API cutover dry run', DATEADD(WEEK, 20, @startDate), N'Parallel feed validation with ops sign-off.'),
+    (NEWID(), @claimsId, 4, N'Production handoff', @claimsTarget, N'Final UAT, security checklist, and warranty kickoff.');
+
+    -- Contoso mobile
+    INSERT INTO [dbo].[ContractSkills] ([ContractId], [SkillId], [PriorityId])
+    SELECT @mobileId, [Id], 1 FROM [dbo].[Skills]
+    WHERE [Name] IN (N'React', N'TypeScript', N'Figma', N'Accessibility', N'CI/CD');
+
+    INSERT INTO [dbo].[ContractSkills] ([ContractId], [SkillId], [PriorityId])
+    SELECT @mobileId, [Id], 2 FROM [dbo].[Skills]
+    WHERE [Name] IN (N'User Research', N'Prototyping', N'Design Systems', N'Playwright', N'Performance');
+
+    INSERT INTO [dbo].[ContractConstraints] ([ContractId], [ConstraintTypeId]) VALUES
+    (@mobileId, 4), (@mobileId, 5);
+
+    INSERT INTO [dbo].[ContractDeliverables] ([Id], [ContractId], [SortOrder], [Title], [Detail]) VALUES
+    (NEWID(), @mobileId, 1, N'Mobile storefront MVP', N'Browse, search, and checkout on iOS/Android with shared design system.'),
+    (NEWID(), @mobileId, 2, N'Catalog/cart BFF', N'Edge API aggregating catalog, pricing, and cart services.'),
+    (NEWID(), @mobileId, 3, N'Accessibility pass', N'WCAG-oriented audit findings and remediation backlog.'),
+    (NEWID(), @mobileId, 4, N'Release playbook', N'Staged rollout, feature flags, and store submission checklist.');
+
+    INSERT INTO [dbo].[ContractMilestones] ([Id], [ContractId], [SortOrder], [Name], [TargetDate], [Description]) VALUES
+    (NEWID(), @mobileId, 1, N'Design system freeze', DATEADD(WEEK, 3, @startDate), N'Component kit and content patterns approved.'),
+    (NEWID(), @mobileId, 2, N'Beta build', DATEADD(WEEK, 9, @startDate), N'Internal pilot with instrumented funnel metrics.'),
+    (NEWID(), @mobileId, 3, N'Store soft launch', DATEADD(WEEK, 13, @startDate), N'Limited geography release.'),
+    (NEWID(), @mobileId, 4, N'General availability', @mobileTarget, N'Full rollout and warranty start.');
+
+    -- Fabrikam analytics
+    INSERT INTO [dbo].[ContractSkills] ([ContractId], [SkillId], [PriorityId])
+    SELECT @analyticsId, [Id], 1 FROM [dbo].[Skills]
+    WHERE [Name] IN (N'SQL', N'SQL Server', N'Azure', N'.NET', N'Metrics');
+
+    INSERT INTO [dbo].[ContractSkills] ([ContractId], [SkillId], [PriorityId])
+    SELECT @analyticsId, [Id], 2 FROM [dbo].[Skills]
+    WHERE [Name] IN (N'Kafka', N'Docker', N'System Design', N'Security', N'Requirements');
+
+    INSERT INTO [dbo].[ContractConstraints] ([ContractId], [ConstraintTypeId]) VALUES
+    (@analyticsId, 1), (@analyticsId, 3), (@analyticsId, 4);
+
+    INSERT INTO [dbo].[ContractDeliverables] ([Id], [ContractId], [SortOrder], [Title], [Detail]) VALUES
+    (NEWID(), @analyticsId, 1, N'Ingestion pipelines', N'Reliable plant and ERP extract landing with data quality checks.'),
+    (NEWID(), @analyticsId, 2, N'Curated warehouse model', N'Conformed dimensions and facts for ops KPIs.'),
+    (NEWID(), @analyticsId, 3, N'Ops dashboard pack', N'Role-based views for supervisors and plant managers.'),
+    (NEWID(), @analyticsId, 4, N'Governance kit', N'Access model, lineage notes, and audit evidence package.');
+
+    INSERT INTO [dbo].[ContractMilestones] ([Id], [ContractId], [SortOrder], [Name], [TargetDate], [Description]) VALUES
+    (NEWID(), @analyticsId, 1, N'Source inventory', DATEADD(WEEK, 5, @startDate), N'ERP and plant feed catalog with owners.'),
+    (NEWID(), @analyticsId, 2, N'Warehouse MVP', DATEADD(WEEK, 14, @startDate), N'Core facts available for pilot dashboards.'),
+    (NEWID(), @analyticsId, 3, N'Pilot plant go-live', DATEADD(WEEK, 22, @startDate), N'One plant using production dashboards.'),
+    (NEWID(), @analyticsId, 4, N'Program handoff', @analyticsTarget, N'Augmented staff transition and runbooks.');
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[Teams])
+BEGIN
+    DECLARE @now DATETIME2(7) = SYSUTCDATETIME();
+    DECLARE @claimsId UNIQUEIDENTIFIER = '11111111-1111-1111-1111-111111111111';
+    DECLARE @mobileId UNIQUEIDENTIFIER = '22222222-2222-2222-2222-222222222222';
+    DECLARE @analyticsId UNIQUEIDENTIFIER = '33333333-3333-3333-3333-333333333333';
+
+    DECLARE @teamClaimsPortal UNIQUEIDENTIFIER = 'AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAA1';
+    DECLARE @teamClaimsCutover UNIQUEIDENTIFIER = 'AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAA2';
+    DECLARE @teamMobileDelivery UNIQUEIDENTIFIER = 'BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBB1';
+    DECLARE @teamAnalyticsPod UNIQUEIDENTIFIER = 'CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCC1';
+
+    INSERT INTO [dbo].[Teams] ([Id], [Name], [ContractId], [CreatedDate], [ModifiedDate]) VALUES
+    (@teamClaimsPortal, N'Claims Portal Squad', @claimsId, @now, @now),
+    (@teamClaimsCutover, N'Integration Cutover', @claimsId, @now, @now),
+    (@teamMobileDelivery, N'Mobile Delivery', @mobileId, @now, @now),
+    (@teamAnalyticsPod, N'Data Platform Pod', @analyticsId, @now, @now);
+
+    INSERT INTO [dbo].[TeamPositionRequirements] ([TeamId], [PositionTypeId], [RequiredCount])
+    SELECT t.[Id], p.[Id],
+        CASE
+            WHEN t.[Id] = @teamClaimsPortal AND p.[Code] = N'Developer' THEN 3
+            WHEN t.[Id] = @teamClaimsPortal AND p.[Code] = N'UxDesigner' THEN 1
+            WHEN t.[Id] = @teamClaimsPortal AND p.[Code] = N'Product' THEN 1
+            WHEN t.[Id] = @teamClaimsPortal AND p.[Code] = N'QualityAssurance' THEN 1
+            WHEN t.[Id] = @teamClaimsCutover AND p.[Code] = N'Developer' THEN 2
+            WHEN t.[Id] = @teamClaimsCutover AND p.[Code] = N'Product' THEN 1
+            WHEN t.[Id] = @teamClaimsCutover AND p.[Code] = N'QualityAssurance' THEN 1
+            WHEN t.[Id] = @teamMobileDelivery AND p.[Code] = N'Developer' THEN 2
+            WHEN t.[Id] = @teamMobileDelivery AND p.[Code] = N'UxDesigner' THEN 2
+            WHEN t.[Id] = @teamMobileDelivery AND p.[Code] = N'QualityAssurance' THEN 1
+            WHEN t.[Id] = @teamAnalyticsPod AND p.[Code] = N'Developer' THEN 3
+            WHEN t.[Id] = @teamAnalyticsPod AND p.[Code] = N'Product' THEN 1
+            ELSE 0
+        END
+    FROM [dbo].[Teams] t
+    CROSS JOIN [dbo].[PositionTypes] p
+    WHERE t.[Id] IN (@teamClaimsPortal, @teamClaimsCutover, @teamMobileDelivery, @teamAnalyticsPod);
+END
+GO
