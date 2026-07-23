@@ -1,7 +1,13 @@
-.team-builder {
+.team-builder-page {
   width: min(96rem, 100%);
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(20rem, 0.9fr);
+  gap: 0.85rem;
+}
+
+.team-builder {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.85fr);
   gap: 1rem;
   align-items: start;
 }
@@ -10,6 +16,38 @@
   .team-builder {
     grid-template-columns: 1fr;
   }
+}
+
+.team-builder-left,
+.team-builder-right {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.profiles-header h1,
+.team-panel-header h1 {
+  font-size: 1.35rem;
+}
+
+.profiles-filters {
+  padding: 0.85rem 1rem;
+  gap: 0.75rem;
+}
+
+.profiles-layout {
+  min-height: 0;
+}
+
+.profiles-list-panel,
+.profiles-detail-panel {
+  max-height: min(28rem, 48vh);
+  overflow: auto;
+}
+
+.profiles-empty-box {
+  min-height: 4.5rem;
+  padding: 1rem;
 }
 
 .team-panel-header {
@@ -21,7 +59,7 @@
 
 .team-panel-header h1 {
   margin: 0 0 0.35rem;
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
@@ -69,7 +107,7 @@
 
 .profiles-header h1 {
   margin: 0 0 0.35rem;
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
@@ -160,7 +198,9 @@
 .team-rename button,
 .team-requirements button,
 .profiles-list-actions button,
-.team-member-list button {
+.team-member-list button,
+.contract-brief button,
+.team-start button {
   font: inherit;
   padding: 0.5rem 0.85rem;
   border-radius: 6px;
@@ -172,7 +212,9 @@
 
 .profiles-actions .secondary,
 .profiles-list-actions .secondary,
-.team-member-list .secondary {
+.team-member-list .secondary,
+.contract-brief .secondary,
+.team-start .secondary {
   background: #fff;
   color: #1a1a1a;
   border-color: #c5c5cd;

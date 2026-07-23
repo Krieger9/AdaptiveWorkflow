@@ -13,7 +13,7 @@ import {
   type User,
 } from './api/client'
 import { AuthCallback } from './auth/AuthCallback'
-import { ProfilesPage } from './components/ProfilesPage'
+import { HomePage } from './components/HomePage'
 import {
   AUTH_CALLBACK_PATH,
   AUTH_REDIRECT_URI,
@@ -32,6 +32,7 @@ function App() {
   const account = accounts[0] as AccountInfo | undefined
 
   const [view, setView] = useState<View>('home')
+  const [homeKey, setHomeKey] = useState(0)
   const [user, setUser] = useState<User | null>(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -208,7 +209,15 @@ function App() {
           <span className="brand-user">Hello {greetingName(user)}</span>
         </div>
         <nav className="menu">
-          <button type="button" className="linkish" onClick={() => setView('home')}>
+          <button
+            type="button"
+            className="linkish"
+            onClick={() => {
+              setError(null)
+              setView('home')
+              setHomeKey((value) => value + 1)
+            }}
+          >
             Home
           </button>
           <button type="button" className="linkish" onClick={openEdit}>
@@ -223,7 +232,7 @@ function App() {
       <main className={view === 'home' ? 'app wide' : 'app'}>
         {error && <p className="error">{error}</p>}
 
-        {view === 'home' && <ProfilesPage onError={setError} />}
+        {view === 'home' && <HomePage key={homeKey} onError={setError} />}
 
         {view === 'edit' && (
           <section className="panel">

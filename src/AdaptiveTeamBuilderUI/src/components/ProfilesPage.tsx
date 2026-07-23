@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import {
   addTeamMember,
   createTeam,
+  getContract,
   getEmployeeProfile,
   getTeam,
   hideTeamProfile,
@@ -10,12 +11,14 @@ import {
   renameTeam,
   searchEmployeeProfiles,
   upsertTeamRequirements,
+  type ContractDetail,
   type EmployeeProfile,
   type EmployeeProfileListItem,
   type PositionType,
   type TeamDetail,
   type TeamListItem,
 } from '../api/client'
+import { ContractBrief } from './ContractBrief'
 import './ProfilesPage.css'
 
 const POSITION_FILTERS: { value: PositionType; label: string }[] = [
@@ -61,10 +64,12 @@ function formatSpecialty(value: string | null): string | null {
 }
 
 type ProfilesPageProps = {
+  contractId: string
+  onChangeContract: () => void
   onError: (message: string | null) => void
 }
 
-export function ProfilesPage({ onError }: ProfilesPageProps) {
+export function ProfilesPage({ contractId, onChangeContract, onError }: ProfilesPageProps) {
   const [teams, setTeams] = useState<TeamListItem[]>([])
   const [activeTeamId, setActiveTeamId] = useState<string | null>(null)
   const [team, setTeam] = useState<TeamDetail | null>(null)
@@ -83,6 +88,8 @@ export function ProfilesPage({ onError }: ProfilesPageProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedProfile, setSelectedProfile] = useState<EmployeeProfile | null>(null)
   const [loadingDetail, setLoadingDetail] = useState(false)
+  const [contract, setContract] = useState<ContractDetail | null>(null)
+  const [contractLoading, setContractLoading] = useState(false)
 
   const memberIds = useMemo(
     () => new Set(team?.members.map((m) => m.employeeProfileId) ?? []),
@@ -90,13 +97,16 @@ export function ProfilesPage({ onError }: ProfilesPageProps) {
   )
 
   const refreshTeams = useCallback(async () => {
-    const items = await listTeams()
+    const items = await listTeams(contractId)
     setTeams(items)
     return items
-  }, [])
+  }, [contractId])
 
   const loadTeam = useCallback(async (teamId: string) => {
     const detail = await getTeam(teamId)
+    if (detail.contractId !== contractId) {
+      throw new Error('That team does not belong to the selected contract.')
+    }
     setTeam(detail)
     setRenameValue(detail.name)
     setShowRename(false)
@@ -109,7 +119,7 @@ export function ProfilesPage({ onError }: ProfilesPageProps) {
     localStorage.setItem(ACTIVE_TEAM_KEY, teamId)
     setActiveTeamId(teamId)
     return detail
-  }, [])
+  }, [contractId])
 
   function closeActiveTeam() {
     setTeam(null)
@@ -132,25 +142,37 @@ export function ProfilesPage({ onError }: ProfilesPageProps) {
   useEffect(() => {
     let cancelled = false
     ;(async () => {
+      setContractLoading(true)
+      onError(null)
       try {
+        const detail = await getContract(contractId)
+        if (cancelled) {
+          return
+        }
+        setContract(detail)
         await refreshTeams()
         if (cancelled) {
           return
         }
-        // Start with no active team selected.
         localStorage.removeItem(ACTIVE_TEAM_KEY)
         setActiveTeamId(null)
         setTeam(null)
+        setTeamPanelMode('idle')
       } catch (err) {
         if (!cancelled) {
-          onError(err instanceof Error ? err.message : 'Failed to load teams')
+          setContract(null)
+          onError(err instanceof Error ? err.message : 'Failed to load contract')
+        }
+      } finally {
+        if (!cancelled) {
+          setContractLoading(false)
         }
       }
     })()
     return () => {
       cancelled = true
     }
-  }, [onError, refreshTeams])
+  }, [contractId, onError, refreshTeams])
 
   useEffect(() => {
     if (!selectedId) {
@@ -237,7 +259,7 @@ export function ProfilesPage({ onError }: ProfilesPageProps) {
     }
     setTeamBusy(true)
     try {
-      const created = await createTeam(newTeamName.trim())
+      const created = await createTeam(newTeamName.trim(), contractId)
       setNewTeamName('')
       await refreshTeams()
       await loadTeam(created.id)
@@ -370,7 +392,14 @@ export function ProfilesPage({ onError }: ProfilesPageProps) {
   }
 
   return (
-    <section className="team-builder">
+    <div className="team-builder-page">
+      <ContractBrief
+        contract={contract}
+        loading={contractLoading}
+        onChangeContract={onChangeContract}
+      />
+
+      <section className="team-builder">
       <div className="team-builder-left">
         <header className="profiles-header">
           <h1>Find contractors</h1>
@@ -727,6 +756,7 @@ export function ProfilesPage({ onError }: ProfilesPageProps) {
         )}
       </aside>
     </section>
+    </div>
   )
 }
 

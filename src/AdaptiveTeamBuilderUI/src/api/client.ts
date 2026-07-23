@@ -155,6 +155,7 @@ export async function getEmployeeProfile(id: string): Promise<EmployeeProfile> {
 export type TeamListItem = {
   id: string
   name: string
+  contractId: string
 }
 
 export type TeamRequirement = {
@@ -178,6 +179,7 @@ export type TeamMember = {
 export type TeamDetail = {
   id: string
   name: string
+  contractId: string
   createdDate: string
   modifiedDate: string
   requirements: TeamRequirement[]
@@ -185,18 +187,102 @@ export type TeamDetail = {
   hiddenEmployeeProfileIds: string[]
 }
 
-export async function listTeams(): Promise<TeamListItem[]> {
-  const response = await fetch(`${apiBaseUrl}/api/teams`, {
+export type ContractListItem = {
+  id: string
+  code: string
+  title: string
+  clientName: string
+  outcomeSummary: string
+  engagementType: string
+  engagementTypeName: string
+  workMode: string
+  workModeName: string
+  durationWeeks: number | null
+  targetDeliveryDate: string | null
+  teamCount: number
+}
+
+export type ContractSkill = {
+  name: string
+  priority: string
+  priorityName: string
+}
+
+export type ContractConstraint = {
+  code: string
+  name: string
+}
+
+export type ContractDeliverable = {
+  id: string
+  sortOrder: number
+  title: string
+  detail: string | null
+}
+
+export type ContractMilestone = {
+  id: string
+  sortOrder: number
+  name: string
+  targetDate: string | null
+  description: string | null
+}
+
+export type ContractDetail = {
+  id: string
+  code: string
+  title: string
+  clientName: string
+  outcomeSummary: string
+  scopeSummary: string
+  engagementType: string
+  engagementTypeName: string
+  workMode: string
+  workModeName: string
+  durationWeeks: number | null
+  startDate: string | null
+  targetDeliveryDate: string | null
+  isDefault: boolean
+  skills: ContractSkill[]
+  constraints: ContractConstraint[]
+  deliverables: ContractDeliverable[]
+  milestones: ContractMilestone[]
+}
+
+export async function listContracts(): Promise<ContractListItem[]> {
+  const response = await fetch(`${apiBaseUrl}/api/contracts`, {
+    headers: await authHeaders(),
+  })
+  return parseJson<ContractListItem[]>(response)
+}
+
+export async function getDefaultContract(): Promise<ContractDetail> {
+  const response = await fetch(`${apiBaseUrl}/api/contracts/default`, {
+    headers: await authHeaders(),
+  })
+  return parseJson<ContractDetail>(response)
+}
+
+export async function getContract(id: string): Promise<ContractDetail> {
+  const response = await fetch(`${apiBaseUrl}/api/contracts/${id}`, {
+    headers: await authHeaders(),
+  })
+  return parseJson<ContractDetail>(response)
+}
+
+export async function listTeams(contractId: string): Promise<TeamListItem[]> {
+  const params = new URLSearchParams({ contractId })
+  const response = await fetch(`${apiBaseUrl}/api/teams?${params}`, {
     headers: await authHeaders(),
   })
   return parseJson<TeamListItem[]>(response)
 }
 
-export async function createTeam(name: string): Promise<TeamDetail> {
+export async function createTeam(name: string, contractId: string): Promise<TeamDetail> {
   const response = await fetch(`${apiBaseUrl}/api/teams`, {
     method: 'POST',
     headers: await authHeaders(),
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, contractId }),
   })
   return parseJson<TeamDetail>(response)
 }

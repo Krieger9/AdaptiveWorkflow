@@ -1,0 +1,169 @@
+.contract-brief {
+  background: #fff;
+  border: 1px solid #d8d8de;
+  border-radius: 8px;
+  padding: 0.85rem 1.1rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.contract-brief-empty {
+  color: #5c5c66;
+  font-size: 0.95rem;
+}
+
+.contract-brief-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.contract-brief-kicker {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #5c5c66;
+  margin-bottom: 0.2rem;
+}
+
+.contract-brief-identity h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.contract-brief-outcome {
+  margin: 0.35rem 0 0;
+  color: #3a3a42;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  max-width: 70ch;
+}
+
+.contract-brief-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.contract-brief-toggle {
+  flex-shrink: 0;
+}
+
+.contract-brief-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.contract-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: #eef1f5;
+  color: #2f3640;
+}
+
+.contract-chip.accent {
+  background: #e7f0fa;
+  color: #1a4f8b;
+}
+
+.contract-chip.constraint {
+  background: #f6eee6;
+  color: #6b4a2e;
+}
+
+.contract-chip.muted {
+  background: transparent;
+  color: #5c5c66;
+  padding-left: 0.15rem;
+}
+
+.contract-brief-skills {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.contract-skill-row {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.contract-skill-label {
+  font-size: 0.8rem;
+  color: #5c5c66;
+  padding-top: 0.2rem;
+}
+
+.contract-skill-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.contract-skill {
+  font-size: 0.8rem;
+  padding: 0.18rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid #cfd6df;
+  background: #fff;
+}
+
+.contract-skill.must {
+  border-color: #9bb7d6;
+  background: #f3f7fb;
+}
+
+.contract-skill.nice {
+  border-color: #d5d5db;
+  color: #4a4a52;
+}
+
+.contract-brief-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem 1.25rem;
+  border-top: 1px solid #e4e4ea;
+  padding-top: 0.75rem;
+}
+
+.contract-brief-details h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.contract-brief-details p,
+.contract-brief-details li {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: #3a3a42;
+}
+
+.contract-brief-details ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.3rem;
+}
+
+@media (max-width: 900px) {
+  .contract-brief-details {
+    grid-template-columns: 1fr;
+  }
+
+  .contract-skill-row {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}
