@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   adviseCollaboration,
-  getCollaborationTendencies,
+  getCollaborationProfile,
   getContract,
   listContracts,
+  submitCollaborationObservations,
   type CollaborationAdviseResponse,
   type ContractDetail,
   type ContractListItem,
 } from '../api/client'
-import { assembleSelectContractContext } from '../collaboration/assembleSelectContractContext'
+import {
+  assembleSelectContractContext,
+  assembleSelectContractObservations,
+} from '../collaboration/assembleSelectContractContext'
 import { createAppTendencyBundle } from '../collaboration/appDefaults'
 import {
   SELECT_CONTRACT_SCREEN_ID,
@@ -18,10 +22,13 @@ import {
 import { useScreenObservations } from '../collaboration/useScreenObservations'
 import './ContractsPage.css'
 
+const PROFILE_REFRESH_DELAY_MS = 750
+
 /** Browser forward / MouseX2 side button (not middle-click). */
 const MOUSE_FORWARD_BUTTON = 4
 
 type ContractsPageProps = {
+  userId: string
   onSelect: (contractId: string) => void
   onError: (message: string | null) => void
 }
@@ -64,32 +71,185 @@ function formatFte(value: number): string {
   return `${Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1)} FTE`
 }
 
-export function ContractsPage({ onSelect, onError }: ContractsPageProps) {
+type SignalsViewMode = 'values' | 'graph'
+
+type RelativeSignal = {
+  signalId: string
+  key: string
+  label: string
+  display: string
+  numeric: number | null
+}
+
+type SignalScale = {
+  min: number
+  max: number
+}
+
+function deliveryRiskRank(code: string): number {
+  switch (code) {
+    case 'Low':
+      return 1
+    case 'Medium':
+      return 2
+    case 'High':
+      return 3
+    default:
+      return 0
+  }
+}
+
+function strategicValueRank(code: string): number {
+  switch (code) {
+    case 'Low':
+      return 1
+    case 'Medium':
+      return 2
+    case 'High':
+      return 3
+    case 'VeryHigh':
+      return 4
+    default:
+      return 0
+  }
+}
+
+function contractRelativeSignals(item: ContractListItem): RelativeSignal[] {
+  return [
+    {
+      signalId: 'estimatedContractValue',
+      key: 'Value',
+      label: 'Value',
+      display: formatMoney(item.estimatedContractValue),
+      numeric: item.estimatedContractValue,
+    },
+    {
+      signalId: 'estimatedProfit',
+      key: 'Profit',
+      label: 'Profit',
+      display: formatMoney(item.estimatedProfit),
+      numeric: item.estimatedProfit,
+    },
+    {
+      signalId: 'estimatedMarginPercent',
+      key: 'Margin',
+      label: 'Margin',
+      display: formatPercent(item.estimatedMarginPercent),
+      numeric: item.estimatedMarginPercent,
+    },
+    {
+      signalId: 'winProbabilityPercent',
+      key: 'Win prob.',
+      label: 'Win prob.',
+      display: formatPercent(item.winProbabilityPercent),
+      numeric: item.winProbabilityPercent,
+    },
+    {
+      signalId: 'deliveryRisk',
+      key: 'Delivery risk',
+      label: 'Delivery risk',
+      display: item.deliveryRiskName,
+      numeric: deliveryRiskRank(item.deliveryRisk),
+    },
+    {
+      signalId: 'durationWeeks',
+      key: 'Duration',
+      label: 'Duration',
+      display: item.durationWeeks != null ? `${item.durationWeeks} wk` : '—',
+      numeric: item.durationWeeks,
+    },
+    {
+      signalId: 'strategicValue',
+      key: 'Strategic',
+      label: 'Strategic',
+      display: item.strategicValueName,
+      numeric: strategicValueRank(item.strategicValue),
+    },
+  ]
+}
+
+function buildSignalScales(contracts: ContractListItem[]): Record<string, SignalScale> {
+  const scales: Record<string, SignalScale> = {}
+  for (const item of contracts) {
+    for (const signal of contractRelativeSignals(item)) {
+      if (signal.numeric == null) {
+        continue
+      }
+      const existing = scales[signal.key]
+      if (!existing) {
+        scales[signal.key] = { min: signal.numeric, max: signal.numeric }
+      } else {
+        existing.min = Math.min(existing.min, signal.numeric)
+        existing.max = Math.max(existing.max, signal.numeric)
+      }
+    }
+  }
+  return scales
+}
+
+function relativeBarPercent(value: number | null, scale: SignalScale | undefined): number {
+  if (value == null || !scale) {
+    return 0
+  }
+  if (scale.max === scale.min) {
+    return 100
+  }
+  return ((value - scale.min) / (scale.max - scale.min)) * 100
+}
+
+export function ContractsPage({ userId, onSelect, onError }: ContractsPageProps) {
   const [contracts, setContracts] = useState<ContractListItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(() => new Set())
   const [detailsById, setDetailsById] = useState<Record<string, ContractDetail>>({})
-  const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null)
+  const [detailLoadingIds, setDetailLoadingIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  )
   const [tendencies, setTendencies] = useState<CollaborationTendencyBundle>(
     createAppTendencyBundle(),
   )
   const [advising, setAdvising] = useState(false)
   const [lastAdvise, setLastAdvise] = useState<CollaborationAdviseResponse | null>(null)
   const [debugOpen, setDebugOpen] = useState(false)
+  const [signalsView, setSignalsView] = useState<SignalsViewMode>('values')
 
-  const { emit, emitSignalFocus, drain, peek } = useScreenObservations(
+  const { emit, emitSignalFocus, emitSignalActivate, drain, peek } = useScreenObservations(
     SELECT_CONTRACT_SCREEN_ID,
   )
 
   const primarySuggestion = lastAdvise?.suggestions[0] ?? null
-  const suggestionSatisfied =
-    primarySuggestion?.targetControlId != null &&
-    (primarySuggestion.id === 'expand-first' || primarySuggestion.id.startsWith('expand-')) &&
-    expandedId === primarySuggestion.targetControlId
-  const forwardActionReady = Boolean(
-    primarySuggestion?.targetControlId && !advising && !suggestionSatisfied,
-  )
+  const suggestionSatisfied = (() => {
+    if (!primarySuggestion || advising) {
+      return false
+    }
+    if (primarySuggestion.kind === 'set-view') {
+      const target = primarySuggestion.payload?.signalsDisplay
+      return target != null && target === signalsView
+    }
+    if (
+      primarySuggestion.kind === 'expand' ||
+      primarySuggestion.id === 'expand-first' ||
+      primarySuggestion.id.startsWith('expand-')
+    ) {
+      return (
+        primarySuggestion.targetControlId != null &&
+        expandedIds.has(primarySuggestion.targetControlId)
+      )
+    }
+    return false
+  })()
+  const forwardActionReady = Boolean(primarySuggestion && !advising && !suggestionSatisfied)
   const applySuggestionRef = useRef<() => void>(() => {})
+
+  const refreshProfileSoon = useCallback(() => {
+    window.setTimeout(() => {
+      void getCollaborationProfile()
+        .then((response) => setTendencies(response.tendencies))
+        .catch(() => {
+          /* demo panel refresh is best-effort */
+        })
+    }, PROFILE_REFRESH_DELAY_MS)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -97,17 +257,20 @@ export function ContractsPage({ onSelect, onError }: ContractsPageProps) {
       setLoading(true)
       onError(null)
       try {
-        const [items, tendencyResponse] = await Promise.all([
+        const [items, profileResponse] = await Promise.all([
           listContracts(),
-          getCollaborationTendencies().catch(() => null),
+          getCollaborationProfile().catch(() => null),
         ])
         if (cancelled) {
           return
         }
 
-        const nextTendencies = tendencyResponse?.tendencies ?? createAppTendencyBundle()
+        const profile = profileResponse?.tendencies ?? createAppTendencyBundle()
         setContracts(items)
-        setTendencies(nextTendencies)
+        setTendencies(profile)
+        setExpandedIds(new Set())
+        setDetailsById({})
+        setSignalsView('values')
         setLoading(false)
 
         if (items.length === 0) {
@@ -119,15 +282,51 @@ export function ContractsPage({ onSelect, onError }: ContractsPageProps) {
           const response = await adviseCollaboration(
             assembleSelectContractContext({
               contracts: items,
-              expandedId: null,
+              expandedIds: new Set(),
               detailsById: {},
               events: peek(),
-              tendencies: nextTendencies,
+              signalsDisplay: 'values',
             }),
           )
-          if (!cancelled) {
-            setTendencies(response.updatedTendencies)
-            setLastAdvise(response)
+          if (cancelled) {
+            return
+          }
+
+          setLastAdvise(response)
+
+          const layout = response.preferredLayout
+          const nextSignals: SignalsViewMode =
+            layout?.signalsDisplay === 'graph' || layout?.signalsDisplay === 'values'
+              ? layout.signalsDisplay
+              : 'values'
+          setSignalsView(nextSignals)
+
+          if (layout?.expandAll) {
+            const bootstrapExpandedIds = new Set(items.map((item) => item.id))
+            setExpandedIds(bootstrapExpandedIds)
+            setDetailLoadingIds(new Set(bootstrapExpandedIds))
+            const loaded = await Promise.all(
+              [...bootstrapExpandedIds].map(async (contractId) => {
+                try {
+                  const detail = await getContract(contractId)
+                  return [contractId, detail] as const
+                } catch {
+                  return null
+                }
+              }),
+            )
+            if (cancelled) {
+              return
+            }
+
+            const nextDetailsById = Object.fromEntries(
+              loaded.filter((entry): entry is readonly [string, ContractDetail] => entry != null),
+            )
+            setDetailsById(nextDetailsById)
+            setDetailLoadingIds(new Set())
+            if (Object.keys(nextDetailsById).length < bootstrapExpandedIds.size) {
+              setExpandedIds(new Set(Object.keys(nextDetailsById)))
+            }
           }
         } catch (err) {
           if (!cancelled) {
@@ -157,55 +356,124 @@ export function ContractsPage({ onSelect, onError }: ContractsPageProps) {
     ) => {
       const request = assembleSelectContractContext({
         contracts,
-        expandedId,
+        expandedIds,
         detailsById,
         events,
-        tendencies,
+        signalsDisplay: signalsView,
       })
       const response = await adviseCollaboration(request)
-      setTendencies(response.updatedTendencies)
       setLastAdvise(response)
       if (options?.openDebug) {
         setDebugOpen(true)
       }
       return response
     },
-    [contracts, detailsById, expandedId, tendencies],
+    [contracts, detailsById, expandedIds, signalsView],
+  )
+
+  const flushObservationsAndAdvise = useCallback(
+    async (options?: {
+      openDebug?: boolean
+      nextExpandedIds?: ReadonlySet<string>
+      nextDetailsById?: Record<string, ContractDetail>
+      nextSignalsDisplay?: SignalsViewMode
+    }) => {
+      const events = drain()
+      const response = await submitCollaborationObservations(
+        assembleSelectContractObservations({
+          userId,
+          contracts,
+          expandedIds: options?.nextExpandedIds ?? expandedIds,
+          detailsById: options?.nextDetailsById ?? detailsById,
+          events,
+          signalsDisplay: options?.nextSignalsDisplay ?? signalsView,
+        }),
+      )
+      setLastAdvise({
+        promptPreview: response.promptPreview,
+        suggestions: response.suggestions,
+        preferredLayout: response.preferredLayout,
+      })
+      if (options?.openDebug) {
+        setDebugOpen(true)
+      }
+      refreshProfileSoon()
+      return response
+    },
+    [contracts, detailsById, drain, expandedIds, refreshProfileSoon, signalsView, userId],
   )
 
   async function expandContract(contractId: string) {
-    if (expandedId === contractId) {
+    if (expandedIds.has(contractId)) {
       return
     }
 
     const item = contracts.find((c) => c.id === contractId)
     const label = item ? `${item.code} ${item.title}` : contractId
+    const nextExpandedIds = new Set(expandedIds)
+    nextExpandedIds.add(contractId)
 
-    emit('control.expand', { controlId: contractId, label })
-    setExpandedId(contractId)
+    emit('control.expand', {
+      controlId: contractId,
+      label,
+      meta: {
+        meaning: 'show-extended-detail',
+        fromDetailLevel: 'summary',
+        toDetailLevel: 'extended',
+        signalsDisplay: signalsView,
+      },
+    })
+    setExpandedIds(nextExpandedIds)
+
+    // Exploration only — buffer the expand; flush to the agent on a later decision
+    // (select or view.change).
     if (detailsById[contractId]) {
       return
     }
 
-    setDetailLoadingId(contractId)
+    setDetailLoadingIds((current) => {
+      const next = new Set(current)
+      next.add(contractId)
+      return next
+    })
     onError(null)
     try {
       const detail = await getContract(contractId)
       setDetailsById((current) => ({ ...current, [contractId]: detail }))
     } catch (err) {
       onError(err instanceof Error ? err.message : 'Failed to load contract details')
-      setExpandedId(null)
+      setExpandedIds((current) => {
+        const next = new Set(current)
+        next.delete(contractId)
+        return next
+      })
     } finally {
-      setDetailLoadingId(null)
+      setDetailLoadingIds((current) => {
+        const next = new Set(current)
+        next.delete(contractId)
+        return next
+      })
     }
   }
 
   async function toggleExpand(contractId: string) {
-    if (expandedId === contractId) {
+    if (expandedIds.has(contractId)) {
       const item = contracts.find((c) => c.id === contractId)
       const label = item ? `${item.code} ${item.title}` : contractId
-      emit('control.collapse', { controlId: contractId, label })
-      setExpandedId(null)
+      const nextExpandedIds = new Set(expandedIds)
+      nextExpandedIds.delete(contractId)
+
+      emit('control.collapse', {
+        controlId: contractId,
+        label,
+        meta: {
+          meaning: 'hide-extended-detail',
+          fromDetailLevel: 'extended',
+          toDetailLevel: 'summary',
+          signalsDisplay: signalsView,
+        },
+      })
+      setExpandedIds(nextExpandedIds)
       return
     }
 
@@ -215,35 +483,92 @@ export function ContractsPage({ onSelect, onError }: ContractsPageProps) {
   async function handleSelect(contractId: string) {
     const item = contracts.find((c) => c.id === contractId)
     const label = item ? `${item.code} ${item.title}` : contractId
-    emit('control.select', { controlId: contractId, label })
+    emit('control.select', {
+      controlId: contractId,
+      label,
+      meta: {
+        meaning: 'chose-engagement-to-staff',
+        detailLevel: expandedIds.has(contractId) ? 'extended' : 'summary',
+        signalsDisplay: signalsView,
+      },
+    })
 
     setAdvising(true)
     onError(null)
     try {
-      await runAdvise(drain(), { openDebug: false })
+      await flushObservationsAndAdvise()
       onSelect(contractId)
     } catch (err) {
       onError(
         err instanceof Error
           ? err.message
-          : 'Failed to record collaboration context before selecting',
+          : 'Failed to record collaboration observations before selecting',
       )
     } finally {
       setAdvising(false)
     }
   }
 
-  async function applySuggestion(suggestion: CollaborationSuggestion) {
-    if (advising || !suggestion.targetControlId) {
+  async function setSignalsDisplay(next: SignalsViewMode) {
+    if (next === signalsView) {
       return
     }
 
-    if (suggestion.id === 'navigate-selected') {
+    emit('view.change', {
+      label: 'signals-display',
+      meta: {
+        preferenceAxis: 'signalsDisplay',
+        from: signalsView,
+        to: next,
+        meaning:
+          next === 'graph'
+            ? 'switched-to-relative-graph-signals'
+            : 'switched-to-numeric-signal-values',
+      },
+    })
+    setSignalsView(next)
+
+    setAdvising(true)
+    onError(null)
+    try {
+      await flushObservationsAndAdvise({ nextSignalsDisplay: next })
+    } catch (err) {
+      onError(err instanceof Error ? err.message : 'Failed to refresh AI suggestion')
+    } finally {
+      setAdvising(false)
+    }
+  }
+
+  async function applySuggestion(suggestion: CollaborationSuggestion) {
+    if (advising) {
+      return
+    }
+
+    if (suggestion.kind === 'set-view') {
+      const next = suggestion.payload?.signalsDisplay
+      if (next === 'values' || next === 'graph') {
+        await setSignalsDisplay(next)
+      }
+      return
+    }
+
+    if (!suggestion.targetControlId) {
+      return
+    }
+
+    if (suggestion.kind === 'select' || suggestion.id === 'navigate-selected') {
       await handleSelect(suggestion.targetControlId)
       return
     }
 
-    // expand-first and any future expand-* suggestions
+    if (suggestion.kind === 'collapse') {
+      if (expandedIds.has(suggestion.targetControlId)) {
+        await toggleExpand(suggestion.targetControlId)
+      }
+      return
+    }
+
+    // expand (default)
     await expandContract(suggestion.targetControlId)
   }
 
@@ -318,11 +643,17 @@ export function ContractsPage({ onSelect, onError }: ContractsPageProps) {
     ? contracts.find((item) => item.id === suggestedContractId)
     : null
   const forwardActionLabel = primarySuggestion
-    ? primarySuggestion.id === 'navigate-selected'
-      ? 'Select contract'
-      : 'Expand details'
+    ? primarySuggestion.kind === 'set-view'
+      ? primarySuggestion.payload?.signalsDisplay === 'graph'
+        ? 'Show graphs'
+        : 'Show values'
+      : primarySuggestion.kind === 'select'
+        ? 'Select contract'
+        : primarySuggestion.kind === 'collapse'
+          ? 'Collapse details'
+          : 'Expand details'
     : null
-
+  const signalScales = buildSignalScales(contracts)
 
   return (
     <section className="contracts-page">
@@ -332,6 +663,26 @@ export function ContractsPage({ onSelect, onError }: ContractsPageProps) {
           Expand a card to compare capacity and scope, then select the engagement to build teams.
         </p>
         <div className="contracts-page-tools">
+          <div className="contracts-signals-view-toggle" role="group" aria-label="Signal display">
+            <button
+              type="button"
+              className={signalsView === 'values' ? undefined : 'secondary'}
+              aria-pressed={signalsView === 'values'}
+              disabled={advising || loading}
+              onClick={() => void setSignalsDisplay('values')}
+            >
+              Values
+            </button>
+            <button
+              type="button"
+              className={signalsView === 'graph' ? undefined : 'secondary'}
+              aria-pressed={signalsView === 'graph'}
+              disabled={advising || loading}
+              onClick={() => void setSignalsDisplay('graph')}
+            >
+              Graph
+            </button>
+          </div>
           <button
             type="button"
             className="secondary"
@@ -381,7 +732,9 @@ export function ContractsPage({ onSelect, onError }: ContractsPageProps) {
               {forwardActionReady && (
                 <button
                   type="button"
-                  disabled={!primarySuggestion.targetControlId}
+                  disabled={
+                    primarySuggestion.kind !== 'set-view' && !primarySuggestion.targetControlId
+                  }
                   onClick={() => void applyPrimarySuggestion()}
                 >
                   Accept
@@ -406,9 +759,9 @@ export function ContractsPage({ onSelect, onError }: ContractsPageProps) {
       {!loading && contracts.length > 0 && (
         <ul className="contracts-grid">
           {contracts.map((item) => {
-            const expanded = expandedId === item.id
+            const expanded = expandedIds.has(item.id)
             const detail = detailsById[item.id]
-            const detailLoading = detailLoadingId === item.id
+            const detailLoading = detailLoadingIds.has(item.id)
             const target = formatDate(item.targetDeliveryDate)
             const timeline = [
               item.durationWeeks != null ? `${item.durationWeeks} weeks` : null,
@@ -441,28 +794,90 @@ export function ContractsPage({ onSelect, onError }: ContractsPageProps) {
                   <h2>{item.title}</h2>
                   <p>{item.outcomeSummary}</p>
 
-                  <dl className="contract-select-signals">
-                    {(
-                      [
-                        ['Value', formatMoney(item.estimatedContractValue), 'Value'],
-                        ['Profit', formatMoney(item.estimatedProfit), 'Profit'],
-                        ['Margin', formatPercent(item.estimatedMarginPercent), 'Margin'],
-                        ['Win prob.', formatPercent(item.winProbabilityPercent), 'Win prob.'],
-                        ['Delivery risk', item.deliveryRiskName, 'Delivery risk'],
-                        ['Strategic', item.strategicValueName, 'Strategic'],
-                      ] as const
-                    ).map(([dt, dd, signal]) => (
-                      <div
-                        key={signal}
-                        tabIndex={0}
-                        onMouseEnter={() => emitSignalFocus(item.id, signal, cardLabel)}
-                        onFocus={() => emitSignalFocus(item.id, signal, cardLabel)}
-                      >
-                        <dt>{dt}</dt>
-                        <dd>{dd}</dd>
-                      </div>
-                    ))}
-                  </dl>
+                  {signalsView === 'values' ? (
+                    <dl className="contract-select-signals">
+                      {contractRelativeSignals(item).map((signal) => (
+                        <div
+                          key={signal.signalId}
+                          tabIndex={0}
+                          onMouseEnter={() =>
+                            emitSignalFocus(item.id, signal.signalId, signal.label, {
+                              controlLabel: cardLabel,
+                              signalsDisplay: signalsView,
+                            })
+                          }
+                          onFocus={() =>
+                            emitSignalFocus(item.id, signal.signalId, signal.label, {
+                              controlLabel: cardLabel,
+                              signalsDisplay: signalsView,
+                            })
+                          }
+                          onDoubleClick={() =>
+                            emitSignalActivate(item.id, signal.signalId, signal.label, {
+                              controlLabel: cardLabel,
+                              signalsDisplay: signalsView,
+                            })
+                          }
+                        >
+                          <dt>{signal.label}</dt>
+                          <dd>{signal.display}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  ) : (
+                    <div
+                      className="contract-select-signal-bars"
+                      aria-label="Relative signal comparison"
+                    >
+                      {contractRelativeSignals(item).map((signal) => {
+                        const percent = relativeBarPercent(
+                          signal.numeric,
+                          signalScales[signal.key],
+                        )
+                        return (
+                          <div
+                            key={signal.signalId}
+                            className="contract-select-signal-bar-row"
+                            tabIndex={0}
+                            onMouseEnter={() =>
+                              emitSignalFocus(item.id, signal.signalId, signal.label, {
+                                controlLabel: cardLabel,
+                                signalsDisplay: signalsView,
+                              })
+                            }
+                            onFocus={() =>
+                              emitSignalFocus(item.id, signal.signalId, signal.label, {
+                                controlLabel: cardLabel,
+                                signalsDisplay: signalsView,
+                              })
+                            }
+                            onDoubleClick={() =>
+                              emitSignalActivate(item.id, signal.signalId, signal.label, {
+                                controlLabel: cardLabel,
+                                signalsDisplay: signalsView,
+                              })
+                            }
+                          >
+                            <span className="contract-select-signal-bar-label">
+                              {signal.label}
+                            </span>
+                            <span
+                              className="contract-select-signal-bar-track"
+                              aria-hidden="true"
+                            >
+                              <span
+                                className="contract-select-signal-bar-fill"
+                                style={{ width: `${percent}%` }}
+                              />
+                            </span>
+                            <span className="contract-select-signal-bar-value">
+                              {signal.display}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
 
                   <div className="contract-select-meta">
                     <span>{item.engagementTypeName}</span>
@@ -564,28 +979,44 @@ export function ContractsPage({ onSelect, onError }: ContractsPageProps) {
         >
           <summary>Collaboration context debug</summary>
           <div className="contracts-collab-debug-body">
-            <h3>Active tendencies</h3>
+            <h3>User profile (demo)</h3>
             <pre>
               {tendencies.userOverride ?? tendencies.appDefaults}
               {'\n\n'}
               source: {tendencies.source}
               {tendencies.updatedAt ? `\nupdated: ${tendencies.updatedAt}` : ''}
             </pre>
+            {lastAdvise.preferredLayout && (
+              <>
+                <h3>Preferred layout (from advisor)</h3>
+                <pre>
+                  {JSON.stringify(lastAdvise.preferredLayout, null, 2)}
+                </pre>
+              </>
+            )}
             <h3>Prompt preview</h3>
             <pre>{lastAdvise.promptPreview}</pre>
             {lastAdvise.suggestions.length > 0 && (
               <>
-                <h3>Stub suggestions</h3>
+                <h3>Suggestions</h3>
                 <ul className="contracts-collab-suggestions">
                   {lastAdvise.suggestions.map((suggestion) => (
                     <li key={suggestion.id}>
                       <span>
                         [{suggestion.kind}] {suggestion.label}
+                        {suggestion.payload
+                          ? ` · ${Object.entries(suggestion.payload)
+                              .map(([k, v]) => `${k}=${v}`)
+                              .join(', ')}`
+                          : ''}
                       </span>
                       <button
                         type="button"
                         className="secondary"
-                        disabled={advising || !suggestion.targetControlId}
+                        disabled={
+                          advising ||
+                          (suggestion.kind !== 'set-view' && !suggestion.targetControlId)
+                        }
                         onClick={() => void applySuggestion(suggestion)}
                       >
                         Accept

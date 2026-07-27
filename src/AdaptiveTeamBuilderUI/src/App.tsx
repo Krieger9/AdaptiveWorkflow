@@ -232,7 +232,9 @@ function App() {
       <main className={view === 'home' ? 'app wide' : 'app'}>
         {error && <p className="error">{error}</p>}
 
-        {view === 'home' && <HomePage key={homeKey} onError={setError} />}
+        {view === 'home' && user && (
+          <HomePage key={homeKey} userId={user.id} onError={setError} />
+        )}
 
         {view === 'edit' && (
           <section className="panel">

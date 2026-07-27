@@ -1,11 +1,16 @@
 import type { ContractDetail, ContractListItem } from '../api/client'
-import { APP_DOMAIN_DESCRIPTION, createAppTendencyBundle } from './appDefaults'
+import {
+  SELECT_CONTRACT_SCREEN_ANNOTATIONS,
+  contractCardAnnotations,
+} from './annotations'
+import { APP_DOMAIN_DESCRIPTION } from './appDefaults'
 import {
   SELECT_CONTRACT_SCREEN_ID,
   type CollaborationAdviseRequest,
   type CollaborationControlSnapshot,
   type CollaborationInteractionEvent,
-  type CollaborationTendencyBundle,
+  type CollaborationObservationsRequest,
+  type SignalsDisplayMode,
 } from './types'
 
 function money(value: number): string {
@@ -26,9 +31,11 @@ function datasetSummary(item: ContractListItem, index: number): string {
 
 function toControlSnapshot(
   item: ContractListItem,
-  expandedId: string | null,
+  expandedIds: ReadonlySet<string>,
   detailsById: Record<string, ContractDetail>,
+  signalsDisplay: SignalsDisplayMode | string,
 ): CollaborationControlSnapshot {
+  const expanded = expandedIds.has(item.id)
   const detail = detailsById[item.id]
   const data: Record<string, string> = {
     code: item.code,
@@ -69,21 +76,27 @@ function toControlSnapshot(
     controlId: item.id,
     controlType: 'contract-card',
     label: `${item.code} ${item.title}`,
-    expanded: expandedId === item.id,
+    expanded,
     data,
     detailData,
+    annotations: contractCardAnnotations({ expanded, signalsDisplay }),
   }
 }
 
-export function assembleSelectContractContext(input: {
+function assemblePageContext(input: {
   contracts: ContractListItem[]
-  expandedId: string | null
+  expandedIds: ReadonlySet<string>
   detailsById: Record<string, ContractDetail>
   events: CollaborationInteractionEvent[]
-  tendencies?: CollaborationTendencyBundle | null
+  signalsDisplay: SignalsDisplayMode | string
 }): CollaborationAdviseRequest {
   const controls = input.contracts.map((item) =>
-    toControlSnapshot(item, input.expandedId, input.detailsById),
+    toControlSnapshot(
+      item,
+      input.expandedIds,
+      input.detailsById,
+      input.signalsDisplay,
+    ),
   )
 
   return {
@@ -96,15 +109,47 @@ export function assembleSelectContractContext(input: {
       screenId: SELECT_CONTRACT_SCREEN_ID,
       title: 'Select a contract',
       availableActions: [
-        'expand',
-        'collapse',
-        'select',
-        'navigate-to-contract',
-        'signal-focus',
+        'set-signals-display',
+        'expand-detail',
+        'collapse-detail',
+        'select-contract',
+        'inspect-signal',
       ],
+      viewState: {
+        signalsDisplay: input.signalsDisplay,
+        expandedControlIds: [...input.expandedIds],
+      },
+      annotations: SELECT_CONTRACT_SCREEN_ANNOTATIONS,
     },
     controls,
     events: input.events,
-    tendencies: input.tendencies ?? createAppTendencyBundle(),
+  }
+}
+
+export function assembleSelectContractContext(input: {
+  contracts: ContractListItem[]
+  expandedIds: ReadonlySet<string>
+  detailsById: Record<string, ContractDetail>
+  events: CollaborationInteractionEvent[]
+  signalsDisplay: SignalsDisplayMode | string
+}): CollaborationAdviseRequest {
+  return assemblePageContext(input)
+}
+
+export function assembleSelectContractObservations(input: {
+  userId: string
+  contracts: ContractListItem[]
+  expandedIds: ReadonlySet<string>
+  detailsById: Record<string, ContractDetail>
+  events: CollaborationInteractionEvent[]
+  signalsDisplay: SignalsDisplayMode | string
+}): CollaborationObservationsRequest {
+  const page = assemblePageContext(input)
+  return {
+    userId: input.userId,
+    app: page.app,
+    screen: page.screen,
+    controls: page.controls,
+    events: page.events,
   }
 }

@@ -14,9 +14,17 @@ export function useScreenObservations(screenId: string) {
   const lastSignalAtRef = useRef(0)
 
   useEffect(() => {
-    recordObservation({ screenId, type: 'screen.enter' })
+    recordObservation({
+      screenId,
+      type: 'screen.enter',
+      meta: { meaning: 'entered-select-contract' },
+    })
     return () => {
-      recordObservation({ screenId, type: 'screen.leave' })
+      recordObservation({
+        screenId,
+        type: 'screen.leave',
+        meta: { meaning: 'left-select-contract' },
+      })
     }
   }, [screenId])
 
@@ -35,8 +43,13 @@ export function useScreenObservations(screenId: string) {
   )
 
   const emitSignalFocus = useCallback(
-    (controlId: string, signal: string, controlLabel?: string) => {
-      const key = `${controlId}:${signal}`
+    (
+      controlId: string,
+      signalId: string,
+      signalLabel: string,
+      options?: { controlLabel?: string; signalsDisplay?: string },
+    ) => {
+      const key = `${controlId}:${signalId}`
       const now = Date.now()
       if (
         lastSignalKeyRef.current === key &&
@@ -48,10 +61,40 @@ export function useScreenObservations(screenId: string) {
       lastSignalAtRef.current = now
       return emit('signal.focus', {
         controlId,
-        label: signal,
+        label: signalLabel,
         meta: {
-          signal,
-          ...(controlLabel ? { controlLabel } : {}),
+          signalId,
+          signalLabel,
+          meaning: 'inspected-commercial-signal',
+          ...(options?.signalsDisplay
+            ? { signalsDisplay: options.signalsDisplay }
+            : {}),
+          ...(options?.controlLabel ? { controlLabel: options.controlLabel } : {}),
+        },
+      })
+    },
+    [emit],
+  )
+
+  const emitSignalActivate = useCallback(
+    (
+      controlId: string,
+      signalId: string,
+      signalLabel: string,
+      options?: { controlLabel?: string; signalsDisplay?: string },
+    ) => {
+      return emit('signal.activate', {
+        controlId,
+        label: signalLabel,
+        meta: {
+          signalId,
+          signalLabel,
+          activation: 'dblclick',
+          meaning: 'activated-commercial-signal',
+          ...(options?.signalsDisplay
+            ? { signalsDisplay: options.signalsDisplay }
+            : {}),
+          ...(options?.controlLabel ? { controlLabel: options.controlLabel } : {}),
         },
       })
     },
@@ -68,5 +111,5 @@ export function useScreenObservations(screenId: string) {
     [screenId],
   )
 
-  return { emit, emitSignalFocus, peek, drain }
+  return { emit, emitSignalFocus, emitSignalActivate, peek, drain }
 }

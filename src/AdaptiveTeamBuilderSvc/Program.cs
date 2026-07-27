@@ -67,9 +67,43 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod());
 });
 
-builder.Services.AddSingleton<ICollaborationAdvisor, StubCollaborationAdvisor>();
+builder.Services.AddScoped<ICollaborationProfileStore, EfCollaborationProfileStore>();
+builder.Services.Configure<AgentFrameworkOptions>(
+    builder.Configuration.GetSection(AgentFrameworkOptions.SectionName));
+
+var agentFramework = builder.Configuration
+    .GetSection(AgentFrameworkOptions.SectionName)
+    .Get<AgentFrameworkOptions>() ?? new AgentFrameworkOptions();
+
+builder.Services.AddSingleton<ICollaborationAgentTranscriptLogger, FileCollaborationAgentTranscriptLogger>();
+builder.Services.AddSingleton<StubCollaborationAdvisor>();
+builder.Services.AddSingleton<StubCollaborationProfileUpdater>();
+
+if (agentFramework.IsConfigured)
+{
+    builder.Services.AddSingleton<FoundryCollaborationAgents>();
+    builder.Services.AddSingleton<ICollaborationAdvisor, AgentCollaborationAdvisor>();
+    builder.Services.AddSingleton<ICollaborationProfileUpdater, AgentCollaborationProfileUpdater>();
+}
+else
+{
+    builder.Services.AddSingleton<ICollaborationAdvisor>(sp =>
+        sp.GetRequiredService<StubCollaborationAdvisor>());
+    builder.Services.AddSingleton<ICollaborationProfileUpdater>(sp =>
+        sp.GetRequiredService<StubCollaborationProfileUpdater>());
+}
+
+builder.Services.AddSingleton<ICollaborationProfileUpdateQueue, CollaborationProfileUpdateQueue>();
+builder.Services.AddHostedService<CollaborationProfileUpdateBackgroundService>();
 
 var app = builder.Build();
+
+if (!agentFramework.IsConfigured)
+{
+    app.Logger.LogWarning(
+        "AgentFramework:ApiKey is not set. Collaboration advise/profile update will use stubs. "
+        + "Set the key with: dotnet user-secrets set \"AgentFramework:ApiKey\" \"<your-api-key>\"");
+}
 
 if (app.Environment.IsDevelopment())
 {

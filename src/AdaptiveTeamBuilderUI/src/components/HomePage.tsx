@@ -5,10 +5,11 @@ import { ProfilesPage } from './ProfilesPage'
 const ACTIVE_CONTRACT_KEY = 'atb.activeContractId'
 
 type HomePageProps = {
+  userId: string
   onError: (message: string | null) => void
 }
 
-export function HomePage({ onError }: HomePageProps) {
+export function HomePage({ userId, onError }: HomePageProps) {
   const [contractId, setContractId] = useState<string | null>(() => {
     // Always start on contract selection for a clean demo entry.
     localStorage.removeItem(ACTIVE_CONTRACT_KEY)
@@ -31,7 +32,9 @@ export function HomePage({ onError }: HomePageProps) {
   }, [onError])
 
   if (!contractId) {
-    return <ContractsPage onSelect={handleSelectContract} onError={onError} />
+    return (
+      <ContractsPage userId={userId} onSelect={handleSelectContract} onError={onError} />
+    )
   }
 
   return (

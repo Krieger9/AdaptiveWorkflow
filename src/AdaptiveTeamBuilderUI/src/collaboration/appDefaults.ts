@@ -4,7 +4,9 @@ export const APP_DOMAIN_DESCRIPTION =
   'We are an IT contracting company staffing delivery engagements from a portfolio of contracts.'
 
 export const APP_DEFAULT_TENDENCY_PROSE =
-  'On Select Contract, examine cards left-to-right in grid order. Expand details before choosing. No preferred commercial signal yet.'
+  'On Select Contract, start with numeric signal values and summary cards. ' +
+  'Expand a card for extended staffing/scope detail before selecting. ' +
+  'No preferred commercial signal or graph-vs-values preference yet.'
 
 export function createAppTendencyBundle(
   override?: Partial<CollaborationTendencyBundle> | null,

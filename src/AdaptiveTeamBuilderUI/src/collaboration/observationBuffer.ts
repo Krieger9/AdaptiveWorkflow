@@ -2,6 +2,17 @@ import type { CollaborationInteractionEvent, InteractionEventType } from './type
 
 const buffer: CollaborationInteractionEvent[] = []
 
+/** Last change-action timestamp per screen (excludes signal.focus / screen.enter/leave). */
+const lastChangeAtByScreen = new Map<string, number>()
+
+const CHANGE_ACTION_TYPES = new Set([
+  'control.expand',
+  'control.collapse',
+  'control.select',
+  'view.change',
+  'signal.activate',
+])
+
 export type RecordObservationInput = {
   screenId: string
   type: InteractionEventType | string
@@ -11,14 +22,30 @@ export type RecordObservationInput = {
   at?: string
 }
 
+export function isChangeActionType(type: string): boolean {
+  return CHANGE_ACTION_TYPES.has(type)
+}
+
 export function recordObservation(input: RecordObservationInput): CollaborationInteractionEvent {
+  const at = input.at ?? new Date().toISOString()
+  const atMs = Date.parse(at)
+  const meta: Record<string, string> = { ...(input.meta ?? {}) }
+
+  if (isChangeActionType(input.type) && !Number.isNaN(atMs)) {
+    const previous = lastChangeAtByScreen.get(input.screenId)
+    if (previous != null) {
+      meta.sincePreviousMs = String(Math.max(0, atMs - previous))
+    }
+    lastChangeAtByScreen.set(input.screenId, atMs)
+  }
+
   const event: CollaborationInteractionEvent = {
-    at: input.at ?? new Date().toISOString(),
+    at,
     screenId: input.screenId,
     type: input.type,
     controlId: input.controlId ?? null,
     label: input.label ?? null,
-    meta: input.meta ?? null,
+    meta: Object.keys(meta).length > 0 ? meta : null,
   }
   buffer.push(event)
   return event
@@ -36,6 +63,7 @@ export function drainObservations(screenId?: string): CollaborationInteractionEv
   if (!screenId) {
     const all = [...buffer]
     buffer.length = 0
+    lastChangeAtByScreen.clear()
     return all
   }
 
@@ -50,15 +78,18 @@ export function drainObservations(screenId?: string): CollaborationInteractionEv
   }
   buffer.length = 0
   buffer.push(...kept)
+  lastChangeAtByScreen.delete(screenId)
   return drained
 }
 
 export function clearObservations(screenId?: string): void {
   if (!screenId) {
     buffer.length = 0
+    lastChangeAtByScreen.clear()
     return
   }
   const kept = buffer.filter((event) => event.screenId !== screenId)
   buffer.length = 0
   buffer.push(...kept)
+  lastChangeAtByScreen.delete(screenId)
 }

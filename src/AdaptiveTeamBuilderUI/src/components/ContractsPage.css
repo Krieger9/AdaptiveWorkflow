@@ -16,6 +16,12 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  align-items: center;
+}
+
+.contracts-signals-view-toggle {
+  display: inline-flex;
+  gap: 0.35rem;
 }
 
 .contracts-ai-suggestion {
@@ -252,6 +258,54 @@
   color: #1f2430;
 }
 
+.contract-select-signal-bars {
+  margin: 0.15rem 0 0;
+  padding: 0.55rem 0.65rem;
+  display: grid;
+  gap: 0.4rem;
+  border-radius: 6px;
+  background: #f5f7fa;
+}
+
+.contract-select-signal-bar-row {
+  display: grid;
+  grid-template-columns: 5.75rem minmax(0, 1fr) auto;
+  gap: 0.45rem 0.55rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.contract-select-signal-bar-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #5c5c66;
+}
+
+.contract-select-signal-bar-track {
+  display: block;
+  height: 0.55rem;
+  border-radius: 4px;
+  background: #dde3eb;
+  overflow: hidden;
+}
+
+.contract-select-signal-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: #3b4f66;
+  min-width: 0;
+}
+
+.contract-select-signal-bar-value {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1f2430;
+  text-align: right;
+  white-space: nowrap;
+}
+
 .contract-select-meta {
   display: flex;
   flex-wrap: wrap;
@@ -349,6 +403,15 @@
 @media (max-width: 480px) {
   .contract-select-signals {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .contract-select-signal-bar-row {
+    grid-template-columns: 4.75rem minmax(0, 1fr);
+  }
+
+  .contract-select-signal-bar-value {
+    grid-column: 2;
+    justify-self: start;
   }
 
   .contract-select-actions {

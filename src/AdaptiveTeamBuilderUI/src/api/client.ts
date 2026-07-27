@@ -399,6 +399,11 @@ export type CollaborationAdviseRequest = {
     screenId: string
     title: string
     availableActions: string[]
+    viewState: {
+      signalsDisplay: string
+      expandedControlIds: string[]
+    }
+    annotations?: Record<string, string> | null
   }
   controls: {
     controlId: string
@@ -407,6 +412,7 @@ export type CollaborationAdviseRequest = {
     expanded: boolean
     data: Record<string, string>
     detailData?: Record<string, string> | null
+    annotations?: Record<string, string> | null
   }[]
   events: {
     at: string
@@ -416,6 +422,25 @@ export type CollaborationAdviseRequest = {
     label?: string | null
     meta?: Record<string, string> | null
   }[]
+}
+
+export type CollaborationAdviseResponse = {
+  promptPreview: string
+  suggestions: {
+    id: string
+    kind: string
+    label: string
+    targetControlId: string | null
+    payload?: Record<string, string> | null
+  }[]
+  preferredLayout?: {
+    expandAll: boolean
+    signalsDisplay?: string | null
+    rationale?: string | null
+  } | null
+}
+
+export type CollaborationProfileResponse = {
   tendencies: {
     appDefaults: string
     userOverride: string | null
@@ -424,31 +449,28 @@ export type CollaborationAdviseRequest = {
   }
 }
 
-export type CollaborationAdviseResponse = {
+export type CollaborationObservationsRequest = {
+  userId: string
+  app: CollaborationAdviseRequest['app']
+  screen: CollaborationAdviseRequest['screen']
+  controls: CollaborationAdviseRequest['controls']
+  events: CollaborationAdviseRequest['events']
+}
+
+export type CollaborationObservationsResponse = {
+  userId: string
+  acceptedEventCount: number
+  status: string
   promptPreview: string
-  updatedTendencies: {
-    appDefaults: string
-    userOverride: string | null
-    updatedAt: string | null
-    source: string
-  }
-  suggestions: {
-    id: string
-    kind: string
-    label: string
-    targetControlId: string | null
-  }[]
+  suggestions: CollaborationAdviseResponse['suggestions']
+  preferredLayout?: CollaborationAdviseResponse['preferredLayout']
 }
 
-export type CollaborationTendenciesResponse = {
-  tendencies: CollaborationAdviseResponse['updatedTendencies']
-}
-
-export async function getCollaborationTendencies(): Promise<CollaborationTendenciesResponse> {
-  const response = await fetch(`${apiBaseUrl}/api/collaboration/tendencies`, {
+export async function getCollaborationProfile(): Promise<CollaborationProfileResponse> {
+  const response = await fetch(`${apiBaseUrl}/api/collaboration/profile`, {
     headers: await authHeaders(),
   })
-  return parseJson<CollaborationTendenciesResponse>(response)
+  return parseJson<CollaborationProfileResponse>(response)
 }
 
 export async function adviseCollaboration(
@@ -460,5 +482,16 @@ export async function adviseCollaboration(
     body: JSON.stringify(request),
   })
   return parseJson<CollaborationAdviseResponse>(response)
+}
+
+export async function submitCollaborationObservations(
+  request: CollaborationObservationsRequest,
+): Promise<CollaborationObservationsResponse> {
+  const response = await fetch(`${apiBaseUrl}/api/collaboration/observations`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify(request),
+  })
+  return parseJson<CollaborationObservationsResponse>(response)
 }
 
