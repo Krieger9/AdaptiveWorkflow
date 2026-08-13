@@ -29,7 +29,8 @@ public sealed class AgentCollaborationAdvisor(
             request.Screen.Title,
             request.Screen.ViewState,
             request.Screen.Annotations,
-            request.App.ContractCount);
+            request.App.ContractCount,
+            request.Controls);
 
         try
         {
@@ -68,7 +69,9 @@ public sealed class AgentCollaborationAdvisor(
                 return stub;
             }
 
-            preferredLayout ??= StubCollaborationAdvisor.BuildPreferredLayout(request, profile);
+            preferredLayout = MergePreferredLayout(
+                preferredLayout,
+                StubCollaborationAdvisor.BuildPreferredLayout(request, profile));
             var response = new CollaborationAdviseResponse(
                 promptPreview,
                 suggestions,
@@ -116,5 +119,41 @@ public sealed class AgentCollaborationAdvisor(
                 cancellationToken);
             return stub;
         }
+    }
+
+    /// <summary>
+    /// Prefer Foundry layout, but fill expandTopCount/expandBySignal from stub when the model
+    /// understood keep-top-subset in prose yet omitted the structured fields (expandAll=false only).
+    /// </summary>
+    private static CollaborationPreferredLayoutDto MergePreferredLayout(
+        CollaborationPreferredLayoutDto? fromAgent,
+        CollaborationPreferredLayoutDto fromStub)
+    {
+        if (fromAgent is null)
+        {
+            return fromStub;
+        }
+
+        if (fromAgent.ExpandTopCount is not null && !string.IsNullOrWhiteSpace(fromAgent.ExpandBySignal))
+        {
+            return fromAgent with { ExpandAll = false };
+        }
+
+        if (fromStub.ExpandTopCount is not null && !string.IsNullOrWhiteSpace(fromStub.ExpandBySignal))
+        {
+            return fromAgent with
+            {
+                ExpandAll = false,
+                ExpandTopCount = fromStub.ExpandTopCount,
+                ExpandBySignal = fromStub.ExpandBySignal,
+                Rationale = string.IsNullOrWhiteSpace(fromAgent.Rationale)
+                    ? fromStub.Rationale
+                    : fromAgent.Rationale
+                      + " (filled expandTop from profile: "
+                      + $"{fromStub.ExpandTopCount} by {fromStub.ExpandBySignal})",
+            };
+        }
+
+        return fromAgent;
     }
 }

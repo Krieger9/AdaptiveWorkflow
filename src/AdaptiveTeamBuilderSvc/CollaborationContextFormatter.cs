@@ -95,7 +95,27 @@ public static class CollaborationContextFormatter
             sb.AppendLine($"  visibleControls: {visible}");
         }
 
-        if (visible > 1 && expandedCount >= visible && selected)
+        // Auto-applied expand-all often yields expandsThisTurn=0 with only collapses buffered.
+        // Returning to keep-top-two often expands 2 of 3 with zero collapses (third never opened).
+        if (visible >= 3
+            && expandedCount == visible - 1
+            && selected)
+        {
+            sb.AppendLine(
+                "  inferredPattern: keep-top-two-then-select — user kept exactly one card collapsed "
+                + "(or never opened it) and selected from a two-card extended set. Prefer recording "
+                + "a compare-top-subset habit; combine with commercial signal rank cues for which "
+                + "metric ranked the expanded pair #1+#2.");
+        }
+        else if (visible >= 3
+            && expandedCount == visible - 1
+            && collapseEvents >= 1)
+        {
+            sb.AppendLine(
+                "  inferredPattern: keep-top-two-compare — user has two of three cards extended. "
+                + "Lean toward comparing a subset, not expand-all or expand-one.");
+        }
+        else if (visible > 1 && expandedCount >= visible && selected)
         {
             sb.AppendLine(
                 "  inferredPattern: expand-all-then-select — user opened extended detail on every "
@@ -108,7 +128,7 @@ public static class CollaborationContextFormatter
                 "  inferredPattern: expand-all-compare — user currently has every visible contract "
                 + "in extended detail. Prefer recording a compare-all-extended tendency.");
         }
-        else if (expandEvents >= 2 && collapseEvents == 0)
+        else if (expandEvents >= 2 && collapseEvents == 0 && expandedCount >= 2)
         {
             sb.AppendLine(
                 "  inferredPattern: expand-many — user opened multiple cards without collapsing. "
@@ -190,6 +210,203 @@ public static class CollaborationContextFormatter
         return sb.ToString().TrimEnd();
     }
 
+    /// <summary>
+    /// Ranks commercial signals across visible contract cards and notes where expanded/selected/
+    /// collapsed cards sit — evidence for preferred commercial signal (e.g. Margin vs Profit).
+    /// </summary>
+    public static string FormatSignalRankComparison(
+        IReadOnlyList<CollaborationControlSnapshotDto>? controls,
+        CollaborationViewStateDto? viewState,
+        IReadOnlyList<CollaborationInteractionEventDto>? events = null)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine(
+            "Commercial signal rank cues (visible portfolio this turn; #1 = highest numeric):");
+
+        if (controls is null || controls.Count == 0)
+        {
+            sb.AppendLine("  (no control snapshots)");
+            return sb.ToString().TrimEnd();
+        }
+
+        var eventList = events ?? [];
+        var expandedIds = new HashSet<string>(
+            viewState?.ExpandedControlIds ?? [],
+            StringComparer.OrdinalIgnoreCase);
+        foreach (var control in controls.Where(c => c.Expanded))
+        {
+            expandedIds.Add(control.ControlId);
+        }
+
+        var selectedIds = new HashSet<string>(
+            eventList
+                .Where(e => e.Type == "control.select" && !string.IsNullOrWhiteSpace(e.ControlId))
+                .Select(e => e.ControlId!),
+            StringComparer.OrdinalIgnoreCase);
+
+        var collapsedIds = new HashSet<string>(
+            eventList
+                .Where(e => e.Type == "control.collapse" && !string.IsNullOrWhiteSpace(e.ControlId))
+                .Select(e => e.ControlId!),
+            StringComparer.OrdinalIgnoreCase);
+
+        var rankedSignals = new (string Key, string Label)[]
+        {
+            ("estimatedContractValue", "Value"),
+            ("estimatedProfit", "Profit"),
+            ("estimatedMarginPercent", "Margin"),
+            ("winProbabilityPercent", "Win prob."),
+        };
+
+        var keepTopTwoSignals = new List<string>();
+        var collapseLowestSignals = new List<string>();
+        var selectHighSignals = new List<string>();
+
+        foreach (var (key, label) in rankedSignals)
+        {
+            var ranked = RankControlsBySignal(controls, key);
+            if (ranked.Count == 0)
+            {
+                continue;
+            }
+
+            sb.AppendLine(
+                $"  {label} order: "
+                + string.Join(
+                    " > ",
+                    ranked.Select(r => $"{ShortLabel(r.Control)}=#{r.Rank}({FormatSignalValue(r.Raw)})")));
+
+            var expandedRanks = ranked
+                .Where(r => expandedIds.Contains(r.Control.ControlId))
+                .Select(r => r.Rank)
+                .OrderBy(r => r)
+                .ToList();
+            if (expandedRanks.Count > 0)
+            {
+                sb.AppendLine(
+                    $"    expanded on {label}: {string.Join(", ", expandedRanks.Select(r => $"#{r}"))}");
+            }
+
+            var collapsedRanks = ranked
+                .Where(r => collapsedIds.Contains(r.Control.ControlId))
+                .Select(r => r.Rank)
+                .OrderBy(r => r)
+                .ToList();
+            if (collapsedRanks.Count > 0)
+            {
+                sb.AppendLine(
+                    $"    collapsed on {label}: {string.Join(", ", collapsedRanks.Select(r => $"#{r}"))}");
+            }
+
+            var selectedRanks = ranked
+                .Where(r => selectedIds.Contains(r.Control.ControlId))
+                .Select(r => r.Rank)
+                .OrderBy(r => r)
+                .ToList();
+            if (selectedRanks.Count > 0)
+            {
+                sb.AppendLine(
+                    $"    selected on {label}: {string.Join(", ", selectedRanks.Select(r => $"#{r}"))}");
+            }
+
+            var lowestRank = ranked.Count;
+            var keptTopTwo = expandedRanks.Count >= 2
+                && expandedRanks.Take(2).SequenceEqual(new[] { 1, 2 });
+            var collapsedLowest = collapsedRanks.Count > 0
+                && collapsedRanks.All(r => r == lowestRank)
+                && collapsedRanks.Contains(lowestRank);
+            var selectedHigh = selectedRanks.Count > 0 && selectedRanks.Min() <= 2;
+
+            if (keptTopTwo)
+            {
+                keepTopTwoSignals.Add(label);
+            }
+
+            if (collapsedLowest)
+            {
+                collapseLowestSignals.Add(label);
+            }
+
+            if (selectedHigh)
+            {
+                selectHighSignals.Add(label);
+            }
+
+            if (keptTopTwo && collapsedLowest)
+            {
+                sb.AppendLine(
+                    $"    pattern: keep-top-2 / collapse-lowest on {label} — strong evidence this "
+                    + "signal drives which cards stay open.");
+            }
+            else if (keptTopTwo)
+            {
+                sb.AppendLine(
+                    $"    pattern: keep-top-2 on {label} — expanded set matches the two highest.");
+            }
+            else if (collapsedLowest)
+            {
+                sb.AppendLine(
+                    $"    pattern: collapse-lowest on {label} — discarded the weakest card on this "
+                    + "metric.");
+            }
+        }
+
+        if (keepTopTwoSignals.Count > 0 || collapseLowestSignals.Count > 0 || selectHighSignals.Count > 0)
+        {
+            sb.AppendLine(
+                "  turn summary: "
+                + (keepTopTwoSignals.Count > 0
+                    ? $"keep-top-2 signals=[{string.Join(", ", keepTopTwoSignals)}]; "
+                    : string.Empty)
+                + (collapseLowestSignals.Count > 0
+                    ? $"collapse-lowest signals=[{string.Join(", ", collapseLowestSignals)}]; "
+                    : string.Empty)
+                + (selectHighSignals.Count > 0
+                    ? $"select-high signals=[{string.Join(", ", selectHighSignals)}]."
+                    : string.Empty).TrimEnd());
+        }
+
+        // Cross-signal elimination: collapsed card high on A but lowest on B.
+        foreach (var collapsedId in collapsedIds)
+        {
+            var ranksBySignal = new List<string>();
+            foreach (var (key, label) in rankedSignals)
+            {
+                var ranked = RankControlsBySignal(controls, key);
+                var hit = ranked.FirstOrDefault(r =>
+                    string.Equals(r.Control.ControlId, collapsedId, StringComparison.OrdinalIgnoreCase));
+                if (hit.Control is not null)
+                {
+                    ranksBySignal.Add($"{label}=#{hit.Rank}");
+                }
+            }
+
+            if (ranksBySignal.Count > 0)
+            {
+                var control = controls.FirstOrDefault(c =>
+                    string.Equals(c.ControlId, collapsedId, StringComparison.OrdinalIgnoreCase));
+                var collapsedLabel = control is null ? collapsedId : ShortLabel(control);
+                sb.AppendLine(
+                    $"  collapsed card {collapsedLabel} ranks: "
+                    + string.Join(", ", ranksBySignal)
+                    + " — if this card is high on Profit/Value but lowest on Margin (or vice versa), "
+                    + "prefer the metric where it was discarded.");
+            }
+        }
+
+        sb.AppendLine(
+            "  inference hint: prefer signals with keep-top-2, collapse-lowest, OR expand-one+"
+            + "select-high this turn. Cross-ranks on the collapsed card eliminate metrics where "
+            + "that card was strong. Habit shifts are bidirectional: if activeSummary says "
+            + "expand-one by Profit but this turn/recent digests show keep-top-2 (expanded=2/3, "
+            + "Profit #1+#2), UNDERMINE expand-one and move to keep-top-two — and the reverse. "
+            + "Likewise Margin ↔ Profit. Commit when ≥2 of the last ~5 digests agree; one "
+            + "contradiction may mark the prior habit as under review. Do not preserve a "
+            + "contradicted durable claim.");
+
+        return sb.ToString().TrimEnd();
+    }
+
     public static string FormatSemanticActions(
         IReadOnlyList<CollaborationInteractionEventDto> events,
         string heading = "Recent semantic actions (what the user did this turn):")
@@ -220,32 +437,322 @@ public static class CollaborationContextFormatter
         return sb.ToString().TrimEnd();
     }
 
+    /// <summary>
+    /// Compact one-line digest of a decision turn for rolling recent-observation memory.
+    /// </summary>
+    public static string? FormatDecisionTurnDigest(
+        IReadOnlyList<CollaborationControlSnapshotDto>? controls,
+        CollaborationViewStateDto? viewState,
+        IReadOnlyList<CollaborationInteractionEventDto> events,
+        string? activeSummary = null,
+        string? screenId = null)
+    {
+        var isDecision = events.Any(e =>
+            e.Type is "control.select" or "view.change");
+        if (!isDecision)
+        {
+            return null;
+        }
+
+        var expandedCount = viewState?.ExpandedControlIds.Count
+            ?? controls?.Count(c => c.Expanded)
+            ?? 0;
+        var visible = controls?.Count ?? 0;
+        var pattern = InferPatternLabel(viewState, visible, events);
+
+        var rankBits = new List<string>();
+        if (controls is { Count: > 0 })
+        {
+            foreach (var (key, label) in new (string Key, string Label)[]
+                     {
+                         ("estimatedProfit", "Profit"),
+                         ("estimatedMarginPercent", "Margin"),
+                         ("estimatedContractValue", "Value"),
+                         ("winProbabilityPercent", "Win"),
+                     })
+            {
+                var ranked = RankControlsBySignal(controls, key);
+                if (ranked.Count == 0)
+                {
+                    continue;
+                }
+
+                var selectedIds = events
+                    .Where(e => e.Type == "control.select" && !string.IsNullOrWhiteSpace(e.ControlId))
+                    .Select(e => e.ControlId!)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var expandedIds = new HashSet<string>(
+                    viewState?.ExpandedControlIds ?? [],
+                    StringComparer.OrdinalIgnoreCase);
+                foreach (var c in controls.Where(c => c.Expanded))
+                {
+                    expandedIds.Add(c.ControlId);
+                }
+
+                var sel = ranked.Where(r => selectedIds.Contains(r.Control.ControlId)).Select(r => r.Rank).ToList();
+                var exp = ranked.Where(r => expandedIds.Contains(r.Control.ControlId)).Select(r => r.Rank).ToList();
+                if (sel.Count > 0 || exp.Count > 0)
+                {
+                    rankBits.Add(
+                        $"{label}:exp={(exp.Count == 0 ? "-" : string.Join("+", exp.Select(r => $"#{r}")))}"
+                        + $"/sel={(sel.Count == 0 ? "-" : string.Join("+", sel.Select(r => $"#{r}")))}");
+                }
+            }
+        }
+
+        var contradiction = DetectContradictionFlags(activeSummary, pattern, rankBits);
+
+        return
+            $"{DateTime.UtcNow:yyyy-MM-ddTHH:mmZ} {(screenId ?? "select-contract")}: "
+            + $"pattern={pattern}; expanded={expandedCount}/{visible}"
+            + (rankBits.Count > 0 ? "; " + string.Join("; ", rankBits) : string.Empty)
+            + (contradiction is null ? string.Empty : "; " + contradiction);
+    }
+
+    public static string FormatRecentTurnDigests(IReadOnlyList<string>? digests)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine(
+            "Recent decision-turn digests (oldest→newest, last ~5; use to detect habit shifts "
+            + "vs one-off actions):");
+        if (digests is null || digests.Count == 0)
+        {
+            sb.AppendLine("  (none yet — only this turn's evidence is available)");
+            return sb.ToString().TrimEnd();
+        }
+
+        for (var i = 0; i < digests.Count; i++)
+        {
+            sb.AppendLine($"  {i + 1}) {digests[i]}");
+        }
+
+        sb.AppendLine(
+            "  digest rule: if ≥2 recent digests agree on a new pattern/signal and contradict "
+            + "activeSummary, rewrite TendencyProse to the new habit and drop the old claim. "
+            + "pattern=keep-top-two-then-select (or expanded=2/3 with keep-top-2 ranks) overrides "
+            + "a sticky expand-one claim; expand-one digests override sticky keep-top-two. "
+            + "A single contradictory digest may mark the prior habit as under review.");
+        return sb.ToString().TrimEnd();
+    }
+
+    private static string InferPatternLabel(
+        CollaborationViewStateDto? viewState,
+        int visible,
+        IReadOnlyList<CollaborationInteractionEventDto> events)
+    {
+        var expandedCount = viewState?.ExpandedControlIds.Count ?? 0;
+        var expandEvents = events.Count(e => e.Type == "control.expand");
+        var collapseEvents = events.Count(e => e.Type == "control.collapse");
+        var selected = events.Any(e => e.Type == "control.select");
+
+        if (visible >= 3 && expandedCount == visible - 1 && selected)
+        {
+            return "keep-top-two-then-select";
+        }
+
+        if (visible >= 3 && expandedCount == visible - 1)
+        {
+            return "keep-top-two-compare";
+        }
+
+        if (visible > 1 && expandedCount >= visible && selected)
+        {
+            return "expand-all-then-select";
+        }
+
+        if (expandedCount == 1 && selected)
+        {
+            return "expand-one-then-select";
+        }
+
+        if (expandedCount == 0 && selected)
+        {
+            return "select-from-summary";
+        }
+
+        if (expandEvents >= 2 && collapseEvents == 0 && expandedCount >= 2)
+        {
+            return "expand-many";
+        }
+
+        return "other";
+    }
+
+    private static string? DetectContradictionFlags(
+        string? activeSummary,
+        string pattern,
+        IReadOnlyList<string> rankBits)
+    {
+        if (string.IsNullOrWhiteSpace(activeSummary))
+        {
+            return null;
+        }
+
+        var summary = activeSummary.ToLowerInvariant();
+        var flags = new List<string>();
+
+        var claimsMargin = summary.Contains("margin", StringComparison.Ordinal)
+            && (summary.Contains("prefer", StringComparison.Ordinal)
+                || summary.Contains("durable", StringComparison.Ordinal)
+                || summary.Contains("commercial-signal", StringComparison.Ordinal)
+                || summary.Contains("commercial signal", StringComparison.Ordinal));
+        var claimsProfit = summary.Contains("profit", StringComparison.Ordinal)
+            && (summary.Contains("prefer", StringComparison.Ordinal)
+                || summary.Contains("durable", StringComparison.Ordinal)
+                || summary.Contains("commercial-signal", StringComparison.Ordinal)
+                || summary.Contains("commercial signal", StringComparison.Ordinal));
+        var claimsKeepTopTwo = summary.Contains("keep-top-two", StringComparison.Ordinal)
+            || summary.Contains("top two", StringComparison.Ordinal)
+            || summary.Contains("strongest two", StringComparison.Ordinal)
+            || summary.Contains("two highest", StringComparison.Ordinal)
+            || summary.Contains("expandTopCount=2", StringComparison.Ordinal)
+            || summary.Contains("opens the two", StringComparison.Ordinal);
+        var claimsExpandOne = summary.Contains("expand-one", StringComparison.Ordinal)
+            || summary.Contains("expand one", StringComparison.Ordinal)
+            || summary.Contains("opens a single", StringComparison.Ordinal)
+            || summary.Contains("open a single", StringComparison.Ordinal)
+            || summary.Contains("single card", StringComparison.Ordinal)
+            || summary.Contains("one card", StringComparison.Ordinal)
+            || summary.Contains("expandTopCount=1", StringComparison.Ordinal);
+
+        var profitSelHigh = rankBits.Any(b =>
+            b.StartsWith("Profit:", StringComparison.Ordinal)
+            && b.Contains("sel=#1", StringComparison.Ordinal));
+        var marginSelLow = rankBits.Any(b =>
+            b.StartsWith("Margin:", StringComparison.Ordinal)
+            && (b.Contains("sel=#3", StringComparison.Ordinal) || b.Contains("exp=#3", StringComparison.Ordinal)));
+        var profitKeepTopTwo = rankBits.Any(b =>
+            b.StartsWith("Profit:", StringComparison.Ordinal)
+            && b.Contains("exp=#1+#2", StringComparison.Ordinal));
+
+        if (claimsMargin && profitSelHigh && marginSelLow)
+        {
+            flags.Add("CONTRADICTS prior Margin claim (this turn Profit-high / Margin-low)");
+        }
+
+        if (claimsKeepTopTwo && pattern is "expand-one-then-select" or "select-from-summary")
+        {
+            flags.Add($"CONTRADICTS prior keep-top-two (this turn {pattern})");
+        }
+
+        if (claimsExpandOne && pattern is "keep-top-two-then-select" or "keep-top-two-compare")
+        {
+            flags.Add($"CONTRADICTS prior expand-one (this turn {pattern})");
+        }
+
+        if (claimsExpandOne && profitKeepTopTwo)
+        {
+            flags.Add("CONTRADICTS prior expand-one-by-Profit (this turn keep-top-2 on Profit)");
+        }
+
+        if (claimsProfit && marginSelLow == false && rankBits.Any(b =>
+                b.StartsWith("Margin:", StringComparison.Ordinal) && b.Contains("sel=#1", StringComparison.Ordinal))
+            && rankBits.Any(b =>
+                b.StartsWith("Profit:", StringComparison.Ordinal) && b.Contains("sel=#3", StringComparison.Ordinal)))
+        {
+            flags.Add("CONTRADICTS prior Profit claim (this turn Margin-high / Profit-low)");
+        }
+
+        return flags.Count == 0 ? null : string.Join("; ", flags);
+    }
+
     public static string FormatExpectationGuidance()
     {
         return
             """
             Expectation for this agent turn:
             - Read the retrieved activeSummary as the user's current tendencies.
+            - Also read Recent decision-turn digests (last ~5). Treat them as stronger evidence for
+              habit shifts than a single sticky sentence in activeSummary.
             - Interpret semantic actions AND expandedCoverage as evidence of preferred view styles
               (signalsDisplay: values vs graph; detailLevel: summary vs extended;
-              compareStyle: expand-one vs expand-all-before-select).
-            - Always return preferredLayout by interpreting activeSummary (especially on cold start
-              with few/no change events): expandAll true when the durable habit is comparing all
-              visible contracts in extended detail before choosing; expandAll false for summary-first
-              / choose-without-opening-every / don't-force. Boilerplate "start with summary" must not
-              override a clear expand-all-before-select habit. Set signalsDisplay to values|graph when
-              the profile has a clear preference; otherwise null.
+              compareStyle: expand-one vs expand-all-before-select vs keep-top-two-then-select).
+            - Also interpret commercial signal rank cues, especially keep-top-2 / collapse-lowest /
+              expand-one+select-high patterns and collapsed-card cross-ranks. Auto-applied expand-all
+              may yield expandsThisTurn=0; treat final expanded set plus collapse events as primary.
+            - Habit shift / rollback (critical):
+              * Shifts are bidirectional. expand-one ↔ keep-top-two and Margin ↔ Profit can each
+                reverse when recent digests disagree with activeSummary.
+              * If this turn CONTRADICTS activeSummary (e.g. profile says expand-one by Profit but
+                turn/digests show keep-top-two with Profit #1+#2 expanded), do NOT re-assert expand-one.
+              * Mark the old habit as under review after one contradiction; after ≥2 agreeing
+                recent digests on the new pattern/signal, COMMIT the new habit and remove the old
+                durable commercial-signal / compareStyle claim from TendencyProse.
+              * expanded=2/3 with keep-top-2 rank cues IS keep-top-two even with zero collapse events
+                (the third card may never have been opened).
+              * Preserve only preferences that this turn and recent digests still support.
+            - Preferred commercial signal commitment:
+              * Confirming turns on the SAME signal may commit (keep-top-2, collapse-lowest, or
+                expand-one+select-high on that signal).
+              * Confirming a NEW signal that contradicts the profile requires digest agreement
+                (≥2 recent turns), not loyalty to the old prose.
+            - Always return preferredLayout by interpreting the UPDATED tendencies (especially on
+              cold start): expandAll true only for true expand-all; keep-top-two by signal →
+              expandAll=false, expandTopCount=2, expandBySignal=...; expand-one by signal →
+              expandAll=false, expandTopCount=1, expandBySignal=...; summary-first → expandAll=false
+              with null expandTopCount. Set signalsDisplay when clear.
             - preferredLayout is what the client auto-applies on load; suggestions remain interactive
               adaptations (set-view / expand / collapse / select) for the current turn.
-            - If expandedCoverage is all/most visible contracts and the user then selects,
-              record that they like expanding and analyzing all contracts before choosing.
-            - Use action timing (sincePreviousMs / timing cues) to down-weight accidental toggles
-              (likely-mistake: quick expand→collapse) and trust deliberate-dwell / slow gaps more.
-            - Prefer durable preference updates / UI adaptations the client can apply directly.
+            - Use action timing to down-weight accidental toggles (likely-mistake) and trust
+              deliberate-dwell / slow gaps more.
             - Keep TendencyProse concise; rewrite noisy stub append logs into clean preferences.
             - Do not invent control IDs; use only ids present in the control snapshots.
             """.Trim();
     }
+
+    private static List<(CollaborationControlSnapshotDto Control, int Rank, string Raw)> RankControlsBySignal(
+        IReadOnlyList<CollaborationControlSnapshotDto> controls,
+        string signalKey)
+    {
+        var scored = new List<(CollaborationControlSnapshotDto Control, decimal Value, string Raw)>();
+        foreach (var control in controls)
+        {
+            if (control.Data is null
+                || !control.Data.TryGetValue(signalKey, out var raw)
+                || !TryParseDecimal(raw, out var value))
+            {
+                continue;
+            }
+
+            scored.Add((control, value, raw));
+        }
+
+        return scored
+            .OrderByDescending(s => s.Value)
+            .Select((s, index) => (s.Control, Rank: index + 1, s.Raw))
+            .ToList();
+    }
+
+    private static bool TryParseDecimal(string raw, out decimal value)
+    {
+        value = 0;
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return false;
+        }
+
+        return decimal.TryParse(
+            raw.Trim().TrimEnd('%'),
+            System.Globalization.NumberStyles.Number,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out value);
+    }
+
+    private static string ShortLabel(CollaborationControlSnapshotDto control)
+    {
+        if (control.Data is not null
+            && control.Data.TryGetValue("code", out var code)
+            && !string.IsNullOrWhiteSpace(code))
+        {
+            return code;
+        }
+
+        var label = control.Label ?? control.ControlId;
+        return label.Length <= 24 ? label : label[..24];
+    }
+
+    private static string FormatSignalValue(string raw) =>
+        string.IsNullOrWhiteSpace(raw) ? "?" : raw.Trim();
 
     private static long? ResolveGapMs(
         CollaborationInteractionEventDto current,

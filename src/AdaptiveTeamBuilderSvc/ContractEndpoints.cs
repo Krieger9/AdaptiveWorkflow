@@ -21,10 +21,16 @@ public static class ContractEndpoints
 
     private static async Task<IResult> ListContractsAsync(
         AdaptiveTeamBuilderDbContext db,
+        bool? all,
         CancellationToken cancellationToken)
     {
-        var contracts = await db.Contracts.AsNoTracking()
-            .OrderBy(c => c.ClientName)
+        // Default: least-recently-selected 3 (null LastSelectedAt first, then DemoSortOrder).
+        // ?all=true returns the full pool for verifying seed/ranks.
+        var query = db.Contracts.AsNoTracking()
+            .OrderBy(c => c.LastSelectedAt == null ? 0 : 1)
+            .ThenBy(c => c.LastSelectedAt)
+            .ThenBy(c => c.DemoSortOrder)
+            .ThenBy(c => c.ClientName)
             .ThenBy(c => c.Title)
             .Select(c => new
             {
@@ -51,8 +57,14 @@ public static class ContractEndpoints
                 c.StaffingFte,
                 c.SpecialistStaffingNeeded,
                 TeamCount = c.Teams.Count,
-            })
-            .ToListAsync(cancellationToken);
+            });
+
+        if (all != true)
+        {
+            query = query.Take(3);
+        }
+
+        var contracts = await query.ToListAsync(cancellationToken);
 
         var items = contracts.Select(c => new ContractListItemDto(
             c.Id,

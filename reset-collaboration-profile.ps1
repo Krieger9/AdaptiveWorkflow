@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Resets local collaboration profiles (clears UserCollaborationStates).
+  Resets local collaboration profiles and contract selection rotation stamps.
 
 .EXAMPLE
   .\reset-collaboration-profile.ps1

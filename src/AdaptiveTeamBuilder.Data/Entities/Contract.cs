@@ -122,6 +122,12 @@ public class Contract
 
     public bool IsDefault { get; set; }
 
+    /// <summary>Designed demo rotation sequence among never-selected contracts.</summary>
+    public int DemoSortOrder { get; set; }
+
+    /// <summary>Utc stamp when this contract was last chosen via control.select; drives list rotation.</summary>
+    public DateTime? LastSelectedAt { get; set; }
+
     public DateTime CreatedDate { get; set; }
 
     public DateTime ModifiedDate { get; set; }

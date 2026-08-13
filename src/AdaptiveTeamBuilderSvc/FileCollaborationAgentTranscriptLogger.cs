@@ -151,6 +151,11 @@ public sealed class FileCollaborationAgentTranscriptLogger(
                                 ctx.ViewState,
                                 ctx.VisibleControlCount,
                                 patternEvents));
+                        sb.AppendLine(
+                            CollaborationContextFormatter.FormatSignalRankComparison(
+                                ctx.Controls,
+                                ctx.ViewState,
+                                patternEvents));
                     }
                 }
             }

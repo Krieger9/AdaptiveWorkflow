@@ -38,7 +38,8 @@ public sealed class StubCollaborationAdvisor(
                     request.Screen.Title,
                     request.Screen.ViewState,
                     request.Screen.Annotations,
-                    request.App.ContractCount),
+                    request.App.ContractCount,
+                    request.Controls),
                 Events = request.Events,
                 ResponseObject = new
                 {
@@ -99,6 +100,11 @@ public sealed class StubCollaborationAdvisor(
                 request.App.ContractCount,
                 request.Events));
         sb.AppendLine(
+            CollaborationContextFormatter.FormatSignalRankComparison(
+                request.Controls,
+                request.Screen.ViewState,
+                request.Events));
+        sb.AppendLine(
             "Available adaptations: " + string.Join(", ", request.Screen.AvailableActions));
         sb.AppendLine();
 
@@ -135,6 +141,9 @@ public sealed class StubCollaborationAdvisor(
         sb.AppendLine();
         sb.AppendLine(CollaborationContextFormatter.FormatRetrievedProfile(profile));
         sb.AppendLine();
+        sb.AppendLine(
+            CollaborationContextFormatter.FormatRecentTurnDigests(profile.RecentTurnDigests));
+        sb.AppendLine();
         sb.AppendLine(CollaborationContextFormatter.FormatSemanticActions(request.Events));
         sb.AppendLine();
         sb.AppendLine(CollaborationContextFormatter.FormatActionTiming(request.Events));
@@ -142,7 +151,11 @@ public sealed class StubCollaborationAdvisor(
         sb.AppendLine("Return JSON with:");
         sb.AppendLine(
             "- preferredLayout: { expandAll: boolean, signalsDisplay: \"values\"|\"graph\"|null, "
-            + "rationale: short string } — interpret activeSummary for durable cold-start layout");
+            + "expandTopCount: number|null, expandBySignal: \"Margin\"|\"Profit\"|\"Value\"|\"Win prob.\"|null, "
+            + "rationale: short string } — interpret activeSummary (+ recent digests) for durable "
+            + "cold-start layout. keep-top-two by Margin → expandAll=false, expandTopCount=2, "
+            + "expandBySignal=Margin. expand-one by Profit → expandAll=false, expandTopCount=1, "
+            + "expandBySignal=Profit. Use expandAll=true only for true expand-all.");
         sb.AppendLine("- suggestions: applyable adaptations for this turn:");
         sb.AppendLine("  - kind=set-view with payload.signalsDisplay=values|graph");
         sb.AppendLine("  - kind=expand|collapse|select with targetControlId");
@@ -293,12 +306,16 @@ public sealed class StubCollaborationAdvisor(
         var profileText = (profile.UserOverride ?? profile.AppDefaults ?? string.Empty)
             .ToLowerInvariant();
         var summaryFirst = PrefersSummaryFirstFromProfile(profileText);
+        var expandTop = InferExpandTopFromProfile(profileText);
         // Expand-all cues win when both appear (profile being rewritten); summary-first alone collapses.
-        var expandAll = PrefersExpandAllFromProfile(profileText);
+        // Signal-driven top-N overrides expand-all when the habit is keep-top-subset.
+        var expandAll = expandTop is null && PrefersExpandAllFromProfile(profileText);
 
         string? signalsDisplay = null;
         if (profileText.Contains("value-first", StringComparison.Ordinal)
             || profileText.Contains("values over graphs", StringComparison.Ordinal)
+            || profileText.Contains("values over graph", StringComparison.Ordinal)
+            || profileText.Contains("prefers values", StringComparison.Ordinal)
             || profileText.Contains("numeric signal values over graphs", StringComparison.Ordinal))
         {
             signalsDisplay = "values";
@@ -306,18 +323,138 @@ public sealed class StubCollaborationAdvisor(
         else if (profileText.Contains("graph", StringComparison.Ordinal)
             && (profileText.Contains("prefer", StringComparison.Ordinal)
                 || profileText.Contains("likes", StringComparison.Ordinal))
-            && !profileText.Contains("over graphs", StringComparison.Ordinal))
+            && !profileText.Contains("over graphs", StringComparison.Ordinal)
+            && !profileText.Contains("over graph", StringComparison.Ordinal))
         {
             signalsDisplay = "graph";
         }
 
-        var rationale = expandAll
-            ? $"Stub fallback: expand-all-before-select inferred for {request.App.ContractCount} contract(s)."
-            : summaryFirst
-                ? "Stub fallback: summary-first / don't-force inferred; leave cards collapsed."
-                : "Stub fallback: no clear expand-all habit; leave cards collapsed.";
+        string rationale;
+        if (expandTop is { } top)
+        {
+            rationale =
+                $"Stub fallback: expand top {top.Count} by {top.Signal} for "
+                + $"{request.App.ContractCount} visible contract(s).";
+        }
+        else if (expandAll)
+        {
+            rationale =
+                $"Stub fallback: expand-all-before-select inferred for {request.App.ContractCount} contract(s).";
+        }
+        else if (summaryFirst)
+        {
+            rationale = "Stub fallback: summary-first / don't-force inferred; leave cards collapsed.";
+        }
+        else
+        {
+            rationale = "Stub fallback: no clear expand-all habit; leave cards collapsed.";
+        }
 
-        return new CollaborationPreferredLayoutDto(expandAll, signalsDisplay, rationale);
+        return new CollaborationPreferredLayoutDto(
+            expandAll,
+            signalsDisplay,
+            rationale,
+            expandTop?.Count,
+            expandTop?.Signal);
+    }
+
+    private static (int Count, string Signal)? InferExpandTopFromProfile(string profileText)
+    {
+        var signal = InferPreferredSignalFromProfile(profileText);
+        if (signal is null)
+        {
+            return null;
+        }
+
+        var wantsTopOne =
+            profileText.Contains("expand-one", StringComparison.Ordinal)
+            || profileText.Contains("opens a single", StringComparison.Ordinal)
+            || profileText.Contains("open a single", StringComparison.Ordinal)
+            || profileText.Contains("only the highest", StringComparison.Ordinal)
+            || profileText.Contains("highest-profit card", StringComparison.Ordinal)
+            || profileText.Contains("highest profit card", StringComparison.Ordinal)
+            || profileText.Contains("keeps only the highest", StringComparison.Ordinal)
+            || profileText.Contains("keeping only the highest", StringComparison.Ordinal)
+            || profileText.Contains("single contract for extended", StringComparison.Ordinal)
+            || profileText.Contains("one contract for extended", StringComparison.Ordinal);
+
+        if (wantsTopOne)
+        {
+            return (1, signal);
+        }
+
+        var wantsTopSubset =
+            profileText.Contains("top subset", StringComparison.Ordinal)
+            || profileText.Contains("strongest two", StringComparison.Ordinal)
+            || profileText.Contains("top two", StringComparison.Ordinal)
+            || profileText.Contains("top-two", StringComparison.Ordinal)
+            || profileText.Contains("keep-top-two", StringComparison.Ordinal)
+            || profileText.Contains("keep the strongest two", StringComparison.Ordinal)
+            || profileText.Contains("opens the two", StringComparison.Ordinal)
+            || profileText.Contains("open the two", StringComparison.Ordinal)
+            || profileText.Contains("highest-margin cards", StringComparison.Ordinal)
+            || profileText.Contains("top-margin", StringComparison.Ordinal)
+            || profileText.Contains("drops the lowest", StringComparison.Ordinal)
+            || profileText.Contains("collapse the lowest", StringComparison.Ordinal)
+            || profileText.Contains("collapses the lowest", StringComparison.Ordinal)
+            || profileText.Contains("lowest-margin", StringComparison.Ordinal)
+            || profileText.Contains("rather than forcing every", StringComparison.Ordinal)
+            || profileText.Contains("not forcing every", StringComparison.Ordinal);
+
+        if (!wantsTopSubset)
+        {
+            return null;
+        }
+
+        return (2, signal);
+    }
+
+    private static string? InferPreferredSignalFromProfile(string profileText)
+    {
+        // Prefer the explicitly named durable commercial signal when present.
+        if (profileText.Contains("prefers profit", StringComparison.Ordinal)
+            || profileText.Contains("prefer profit", StringComparison.Ordinal)
+            || profileText.Contains("preference is profit", StringComparison.Ordinal)
+            || profileText.Contains("highest-profit", StringComparison.Ordinal)
+            || profileText.Contains("highest profit", StringComparison.Ordinal)
+            || (profileText.Contains("profit", StringComparison.Ordinal)
+                && profileText.Contains("preferred commercial signal", StringComparison.Ordinal)
+                && !profileText.Contains("glance at", StringComparison.Ordinal)))
+        {
+            return "Profit";
+        }
+
+        if (profileText.Contains("prefers margin", StringComparison.Ordinal)
+            || profileText.Contains("prefer margin", StringComparison.Ordinal)
+            || profileText.Contains("preference is margin", StringComparison.Ordinal)
+            || profileText.Contains("preferred commercial signal: margin", StringComparison.Ordinal)
+            || profileText.Contains("preferred commercial signal is margin", StringComparison.Ordinal)
+            || profileText.Contains("highest-margin", StringComparison.Ordinal)
+            || profileText.Contains("top-margin", StringComparison.Ordinal)
+            || profileText.Contains("lowest-margin", StringComparison.Ordinal)
+            || (profileText.Contains("margin", StringComparison.Ordinal)
+                && profileText.Contains("preferred commercial signal", StringComparison.Ordinal)
+                && !profileText.Contains("under review", StringComparison.Ordinal)))
+        {
+            return "Margin";
+        }
+
+        if (profileText.Contains("prefers value", StringComparison.Ordinal)
+            || (profileText.Contains("preferred commercial signal", StringComparison.Ordinal)
+                && profileText.Contains(" value", StringComparison.Ordinal)
+                && !profileText.Contains("values over", StringComparison.Ordinal)))
+        {
+            return "Value";
+        }
+
+        if (profileText.Contains("prefers win", StringComparison.Ordinal)
+            || (profileText.Contains("win probability", StringComparison.Ordinal)
+                && profileText.Contains("preferred commercial signal", StringComparison.Ordinal)))
+        {
+            return "Win prob.";
+        }
+
+        return null;
     }
 
     public static string HumanizeEvent(CollaborationInteractionEventDto evt)

@@ -100,6 +100,9 @@ public static class CollaborationEndpoints
                 statusCode: StatusCodes.Status403Forbidden);
         }
 
+        // Stamp selected contract before advise/profile so the next list call rotates.
+        await StampSelectedContractsAsync(db, request.Events, cancellationToken);
+
         var profile = await profileStore.GetAsync(user.Id, cancellationToken);
         var adviseRequest = new CollaborationAdviseRequest(
             request.App,
@@ -119,7 +122,8 @@ public static class CollaborationEndpoints
                         request.Screen.Title,
                         request.Screen.ViewState,
                         request.Screen.Annotations,
-                        request.App.ContractCount)),
+                        request.App.ContractCount,
+                        request.Controls)),
                 cancellationToken);
         }
 
@@ -130,6 +134,41 @@ public static class CollaborationEndpoints
             advice.PromptPreview,
             advice.Suggestions,
             advice.PreferredLayout));
+    }
+
+    private static async Task StampSelectedContractsAsync(
+        AdaptiveTeamBuilderDbContext db,
+        IReadOnlyList<CollaborationInteractionEventDto> events,
+        CancellationToken cancellationToken)
+    {
+        var selectedIds = events
+            .Where(e => e.Type == "control.select" && !string.IsNullOrWhiteSpace(e.ControlId))
+            .Select(e => Guid.TryParse(e.ControlId, out var id) ? id : (Guid?)null)
+            .Where(id => id is not null)
+            .Select(id => id!.Value)
+            .Distinct()
+            .ToList();
+
+        if (selectedIds.Count == 0)
+        {
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        var contracts = await db.Contracts
+            .Where(c => selectedIds.Contains(c.Id))
+            .ToListAsync(cancellationToken);
+
+        foreach (var contract in contracts)
+        {
+            contract.LastSelectedAt = now;
+            contract.ModifiedDate = now;
+        }
+
+        if (contracts.Count > 0)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
     }
 
     private static bool TryGetObjectId(ClaimsPrincipal principal, out string objectId)

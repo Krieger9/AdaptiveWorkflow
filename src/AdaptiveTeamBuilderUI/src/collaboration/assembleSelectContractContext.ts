@@ -25,7 +25,8 @@ function datasetSummary(item: ContractListItem, index: number): string {
   return (
     `${index + 1}. ${item.code} — ${item.title} (${item.clientName}); ` +
     `value ${money(item.estimatedContractValue)}, profit ${money(item.estimatedProfit)}, ` +
-    `win ${item.winProbabilityPercent}%, delivery risk ${item.deliveryRiskName}`
+    `margin ${item.estimatedMarginPercent}%, win ${item.winProbabilityPercent}%, ` +
+    `delivery risk ${item.deliveryRiskName}`
   )
 }
 

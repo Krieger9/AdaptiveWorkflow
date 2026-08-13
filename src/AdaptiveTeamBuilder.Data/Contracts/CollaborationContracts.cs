@@ -41,7 +41,9 @@ public record CollaborationTendencyBundleDto(
     string AppDefaults,
     string? UserOverride,
     DateTime? UpdatedAt,
-    string Source);
+    string Source,
+    /// <summary>Newest-last compact digests of recent decision turns (max ~5).</summary>
+    IReadOnlyList<string>? RecentTurnDigests = null);
 
 public record CollaborationAdviseRequest(
     CollaborationAppContextDto App,
@@ -64,7 +66,17 @@ public record CollaborationPreferredLayoutDto(
     bool ExpandAll,
     /// <summary>values | graph | null to leave the current/default display.</summary>
     string? SignalsDisplay,
-    string? Rationale);
+    string? Rationale,
+    /// <summary>
+    /// When ExpandAll is false, expand this many highest-ranked cards by ExpandBySignal
+    /// (e.g. 2 for keep-top-two-by-Margin). Null means leave all collapsed.
+    /// </summary>
+    int? ExpandTopCount = null,
+    /// <summary>
+    /// Commercial signal used with ExpandTopCount: Margin | Profit | Value | Win prob.
+    /// (or estimatedMarginPercent / estimatedProfit / estimatedContractValue / winProbabilityPercent).
+    /// </summary>
+    string? ExpandBySignal = null);
 
 public record CollaborationAdviseResponse(
     string PromptPreview,

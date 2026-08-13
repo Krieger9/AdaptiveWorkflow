@@ -114,6 +114,85 @@ function strategicValueRank(code: string): number {
   }
 }
 
+/** Resolve preferredLayout.expandBySignal to a numeric on ContractListItem. */
+function contractSignalNumeric(
+  item: ContractListItem,
+  expandBySignal: string,
+): number | null {
+  const key = expandBySignal.trim().toLowerCase()
+  if (
+    key === 'margin' ||
+    key === 'estimatedmarginpercent' ||
+    key.includes('margin')
+  ) {
+    return item.estimatedMarginPercent
+  }
+  if (key === 'profit' || key === 'estimatedprofit' || key.includes('profit')) {
+    return item.estimatedProfit
+  }
+  if (
+    key === 'value' ||
+    key === 'estimatedcontractvalue' ||
+    (key.includes('value') && !key.includes('values'))
+  ) {
+    return item.estimatedContractValue
+  }
+  if (key.includes('win')) {
+    return item.winProbabilityPercent
+  }
+  return null
+}
+
+/** Highest-ranked contract ids by preferred commercial signal (ties keep list order). */
+function pickTopContractIdsBySignal(
+  contracts: ContractListItem[],
+  expandBySignal: string,
+  count: number,
+): string[] {
+  if (count <= 0 || contracts.length === 0) {
+    return []
+  }
+
+  return [...contracts]
+    .map((item, index) => ({
+      id: item.id,
+      index,
+      value: contractSignalNumeric(item, expandBySignal),
+    }))
+    .filter((row) => row.value != null)
+    .sort((a, b) => {
+      const delta = (b.value as number) - (a.value as number)
+      return delta !== 0 ? delta : a.index - b.index
+    })
+    .slice(0, count)
+    .map((row) => row.id)
+}
+
+function resolveBootstrapExpandIds(
+  contracts: ContractListItem[],
+  layout: CollaborationAdviseResponse['preferredLayout'] | null | undefined,
+): string[] {
+  if (!layout) {
+    return []
+  }
+
+  const topCount =
+    typeof layout.expandTopCount === 'number' && layout.expandTopCount > 0
+      ? layout.expandTopCount
+      : null
+  const bySignal = layout.expandBySignal?.trim()
+
+  if (topCount != null && bySignal) {
+    return pickTopContractIdsBySignal(contracts, bySignal, topCount)
+  }
+
+  if (layout.expandAll) {
+    return contracts.map((item) => item.id)
+  }
+
+  return []
+}
+
 function contractRelativeSignals(item: ContractListItem): RelativeSignal[] {
   return [
     {
@@ -301,8 +380,9 @@ export function ContractsPage({ userId, onSelect, onError }: ContractsPageProps)
               : 'values'
           setSignalsView(nextSignals)
 
-          if (layout?.expandAll) {
-            const bootstrapExpandedIds = new Set(items.map((item) => item.id))
+          const bootstrapIds = resolveBootstrapExpandIds(items, layout)
+          if (bootstrapIds.length > 0) {
+            const bootstrapExpandedIds = new Set(bootstrapIds)
             setExpandedIds(bootstrapExpandedIds)
             setDetailLoadingIds(new Set(bootstrapExpandedIds))
             const loaded = await Promise.all(
@@ -986,6 +1066,12 @@ export function ContractsPage({ userId, onSelect, onError }: ContractsPageProps)
               source: {tendencies.source}
               {tendencies.updatedAt ? `\nupdated: ${tendencies.updatedAt}` : ''}
             </pre>
+            {tendencies.recentTurnDigests && tendencies.recentTurnDigests.length > 0 && (
+              <>
+                <h3>Recent decision digests</h3>
+                <pre>{tendencies.recentTurnDigests.map((d, i) => `${i + 1}) ${d}`).join('\n')}</pre>
+              </>
+            )}
             {lastAdvise.preferredLayout && (
               <>
                 <h3>Preferred layout (from advisor)</h3>

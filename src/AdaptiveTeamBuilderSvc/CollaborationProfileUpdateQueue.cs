@@ -8,7 +8,9 @@ public record CollaborationProfileUpdateContext(
     string? ScreenTitle,
     CollaborationViewStateDto? ViewState,
     IReadOnlyDictionary<string, string>? ScreenAnnotations,
-    int? VisibleControlCount = null);
+    int? VisibleControlCount = null,
+    IReadOnlyList<CollaborationControlSnapshotDto>? Controls = null,
+    IReadOnlyList<string>? RecentTurnDigests = null);
 
 public record CollaborationProfileUpdateWorkItem(
     Guid UserId,
@@ -62,12 +64,37 @@ public sealed class CollaborationProfileUpdateBackgroundService(
                 var updater = scope.ServiceProvider.GetRequiredService<ICollaborationProfileUpdater>();
 
                 var current = await store.GetAsync(item.UserId, stoppingToken);
+                var context = item.Context is null
+                    ? new CollaborationProfileUpdateContext(
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        current.RecentTurnDigests)
+                    : item.Context with { RecentTurnDigests = current.RecentTurnDigests };
+
                 var updated = await updater.UpdateFromObservationsAsync(
                     current,
                     item.Events,
-                    item.Context,
+                    context,
                     stoppingToken);
-                await store.SaveAsync(item.UserId, updated, stoppingToken);
+
+                var digest = CollaborationContextFormatter.FormatDecisionTurnDigest(
+                    context.Controls,
+                    context.ViewState,
+                    item.Events,
+                    CollaborationContextFormatter.ActiveProfileSummary(current),
+                    context.ScreenId);
+                var digests = EfCollaborationProfileStore.AppendDigest(
+                    current.RecentTurnDigests,
+                    digest);
+
+                await store.SaveAsync(
+                    item.UserId,
+                    updated with { RecentTurnDigests = digests },
+                    stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

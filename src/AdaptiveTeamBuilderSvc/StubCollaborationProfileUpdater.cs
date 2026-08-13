@@ -84,6 +84,9 @@ public sealed class StubCollaborationProfileUpdater(
         sb.AppendLine();
         sb.AppendLine(CollaborationContextFormatter.FormatRetrievedProfile(current));
         sb.AppendLine();
+        sb.AppendLine(
+            CollaborationContextFormatter.FormatRecentTurnDigests(context?.RecentTurnDigests));
+        sb.AppendLine();
 
         if (context is not null)
         {
@@ -113,6 +116,11 @@ public sealed class StubCollaborationProfileUpdater(
                         context.ViewState,
                         context.VisibleControlCount,
                         events));
+                sb.AppendLine(
+                    CollaborationContextFormatter.FormatSignalRankComparison(
+                        context.Controls,
+                        context.ViewState,
+                        events));
             }
 
             sb.AppendLine();
@@ -126,9 +134,13 @@ public sealed class StubCollaborationProfileUpdater(
         sb.AppendLine(CollaborationContextFormatter.FormatActionTiming(events));
         sb.AppendLine();
         sb.AppendLine(
-            "Return the full updated TendencyProse (activeSummary replacement) capturing durable "
-            + "view-style preferences. Use timing cues to down-weight accidental toggles. "
-            + "Preserve useful prior preferences unless this turn clearly contradicts them.");
+            "Return the full updated TendencyProse (activeSummary replacement). "
+            + "Use recent digests + this turn to detect habit shifts: when digests contradict "
+            + "activeSummary (≥2 agreeing new patterns, or clear CONTRADICTS flags), rewrite away "
+            + "the old commercial-signal / compareStyle claim. "
+            + "If activeSummary already matches this turn, you may strengthen it. "
+            + "Use timing cues to down-weight accidental toggles. "
+            + "Do not preserve contradicted preferences out of loyalty to prior prose.");
         return sb.ToString().TrimEnd();
     }
 

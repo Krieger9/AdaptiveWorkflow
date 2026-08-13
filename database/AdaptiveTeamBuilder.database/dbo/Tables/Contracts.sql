@@ -20,6 +20,8 @@ CREATE TABLE [dbo].[Contracts]
     [StaffingFte]               DECIMAL(6, 1)    NOT NULL,
     [SpecialistStaffingNeeded]  NVARCHAR(200)    NULL,
     [IsDefault]                 BIT              NOT NULL CONSTRAINT [DF_Contracts_IsDefault] DEFAULT (0),
+    [DemoSortOrder]             INT              NOT NULL CONSTRAINT [DF_Contracts_DemoSortOrder] DEFAULT (0),
+    [LastSelectedAt]            DATETIME2(7)     NULL,
     [CreatedDate]               DATETIME2(7)     NOT NULL,
     [ModifiedDate]              DATETIME2(7)     NOT NULL,
     CONSTRAINT [PK_Contracts] PRIMARY KEY CLUSTERED ([Id] ASC),
@@ -66,4 +68,8 @@ GO
 
 CREATE NONCLUSTERED INDEX [IX_Contracts_StrategicValueId]
     ON [dbo].[Contracts] ([StrategicValueId]);
+GO
+
+CREATE NONCLUSTERED INDEX [IX_Contracts_LastSelectedAt_DemoSortOrder]
+    ON [dbo].[Contracts] ([LastSelectedAt], [DemoSortOrder]);
 GO

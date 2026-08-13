@@ -59,6 +59,8 @@ export type CollaborationTendencyBundle = {
   userOverride: string | null
   updatedAt: string | null
   source: TendencySource | string
+  /** Newest-last compact digests of recent decision turns (max ~5). */
+  recentTurnDigests?: string[] | null
 }
 
 export type CollaborationAdviseRequest = {
@@ -82,6 +84,10 @@ export type CollaborationPreferredLayout = {
   expandAll: boolean
   signalsDisplay?: string | null
   rationale?: string | null
+  /** When expandAll is false, expand this many highest-ranked cards by expandBySignal. */
+  expandTopCount?: number | null
+  /** Margin | Profit | Value | Win prob. */
+  expandBySignal?: string | null
 }
 
 export type CollaborationAdviseResponse = {

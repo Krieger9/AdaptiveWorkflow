@@ -437,6 +437,8 @@ export type CollaborationAdviseResponse = {
     expandAll: boolean
     signalsDisplay?: string | null
     rationale?: string | null
+    expandTopCount?: number | null
+    expandBySignal?: string | null
   } | null
 }
 
@@ -446,6 +448,7 @@ export type CollaborationProfileResponse = {
     userOverride: string | null
     updatedAt: string | null
     source: string
+    recentTurnDigests?: string[] | null
   }
 }
 

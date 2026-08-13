@@ -92,6 +92,7 @@ public class AdaptiveTeamBuilderDbContext : DbContext
         collab.ToTable("UserCollaborationStates");
         collab.HasKey(c => c.UserId);
         collab.Property(c => c.TendencySource).IsRequired().HasMaxLength(32);
+        collab.Property(c => c.RecentTurnDigestsJson);
         collab.Property(c => c.UpdatedAt).IsRequired();
         collab.HasOne(c => c.User)
             .WithOne()
@@ -266,9 +267,13 @@ public class AdaptiveTeamBuilderDbContext : DbContext
         contract.Property(c => c.StaffingFte).HasPrecision(6, 1);
         contract.Property(c => c.SpecialistStaffingNeeded).HasMaxLength(200);
         contract.Property(c => c.IsDefault).IsRequired();
+        contract.Property(c => c.DemoSortOrder).IsRequired();
+        contract.Property(c => c.LastSelectedAt);
         contract.Property(c => c.CreatedDate).IsRequired();
         contract.Property(c => c.ModifiedDate).IsRequired();
         contract.HasIndex(c => c.Code).IsUnique().HasDatabaseName("UQ_Contracts_Code");
+        contract.HasIndex(c => new { c.LastSelectedAt, c.DemoSortOrder })
+            .HasDatabaseName("IX_Contracts_LastSelectedAt_DemoSortOrder");
         contract.HasOne(c => c.EngagementType)
             .WithMany(e => e.Contracts)
             .HasForeignKey(c => c.EngagementTypeId)

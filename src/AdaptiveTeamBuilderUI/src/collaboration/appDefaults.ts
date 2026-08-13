@@ -16,6 +16,7 @@ export function createAppTendencyBundle(
     userOverride: null,
     updatedAt: null,
     source: 'app',
+    recentTurnDigests: [],
     ...override,
   }
 }
