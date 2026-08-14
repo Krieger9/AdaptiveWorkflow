@@ -1,13 +1,17 @@
 <#
 .SYNOPSIS
-  Resets collaboration user profiles in the local AdaptiveTeamBuilder database.
+  Resets collaboration belief profiles in the local AdaptiveTeamBuilder database.
 
 .DESCRIPTION
-  Deletes rows from dbo.UserCollaborationStates, dbo.CollaborationTurnDigests and
-  dbo.CollaborationStateChangeLogs, and clears Contracts.LastSelectedAt so the Select
-  Contract demo rotation returns to the designed DemoSortOrder head.
-  After reset, GET /api/collaboration/profile returns app defaults (no userOverride)
-  until the profile updater learns again.
+  Deletes rows from dbo.Revisions, dbo.TurnDigests, dbo.Beliefs, dbo.BeliefDocuments
+  and dbo.Interactions, and clears Contracts.LastSelectedAt so the Select Contract
+  demo rotation returns to the designed DemoSortOrder head.
+  After reset, GET /api/collaboration/profile returns the seeded default belief
+  document until the profile updater learns again.
+
+  Note: file-based framework state (JSONL interaction logs, profile version archive,
+  run records, shadow counters) lives under src/AdaptiveTeamBuilderSvc/data/ and is
+  cleared with -IncludeFileState.
 
 .PARAMETER Server
   SQL Server instance. Default: (localdb)\MSSQLLocalDB
@@ -18,20 +22,25 @@
 .PARAMETER UserId
   Optional Users.Id (GUID). When omitted, clears every collaboration profile.
 
+.PARAMETER IncludeFileState
+  Also delete file-based state (interactions/, profiles/, runs/, shadow-counters/)
+  under src/AdaptiveTeamBuilderSvc/data. Glossary files are kept.
+
 .EXAMPLE
   .\scripts\reset-collaboration-profile.ps1
 
 .EXAMPLE
-  .\reset-collaboration-profile.ps1
+  .\scripts\reset-collaboration-profile.ps1 -UserId 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
 
 .EXAMPLE
-  .\scripts\reset-collaboration-profile.ps1 -UserId 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+  .\scripts\reset-collaboration-profile.ps1 -IncludeFileState
 #>
 [CmdletBinding()]
 param(
     [string]$Server = '(localdb)\MSSQLLocalDB',
     [string]$Database = 'AdaptiveTeamBuilder',
-    [Guid]$UserId
+    [Guid]$UserId,
+    [switch]$IncludeFileState
 )
 
 $ErrorActionPreference = 'Stop'
@@ -49,35 +58,49 @@ if ($PSBoundParameters.ContainsKey('UserId')) {
     $scope = 'all users'
 }
 
-Write-Host "Resetting collaboration profiles ($scope) and contract selection stamps on $Server / $Database ..."
+Write-Host "Resetting collaboration belief profiles ($scope) and contract selection stamps on $Server / $Database ..."
 
 $query = @"
 SET NOCOUNT ON;
-IF OBJECT_ID(N'dbo.UserCollaborationStates', N'U') IS NULL
+IF OBJECT_ID(N'dbo.BeliefDocuments', N'U') IS NULL
 BEGIN
-    RAISERROR(N'dbo.UserCollaborationStates does not exist. Publish the database first (.\database\publish-local.ps1).', 16, 1);
+    RAISERROR(N'dbo.BeliefDocuments does not exist. Publish the database first (.\database\publish-local.ps1).', 16, 1);
     RETURN;
 END
 
-DECLARE @deleted INT;
+DECLARE @deletedDocs INT = 0;
+DECLARE @deletedBeliefs INT = 0;
 DECLARE @deletedDigests INT = 0;
-DECLARE @deletedChangeLogs INT = 0;
+DECLARE @deletedRevisions INT = 0;
+DECLARE @deletedInteractions INT = 0;
 
--- Delete change logs first (FK to turn digests), then turn digests, then states.
-IF OBJECT_ID(N'dbo.CollaborationStateChangeLogs', N'U') IS NOT NULL
+-- Delete revisions first (FK to turn digests), then digests, beliefs, documents, interactions.
+IF OBJECT_ID(N'dbo.Revisions', N'U') IS NOT NULL
 BEGIN
-    DELETE FROM [dbo].[CollaborationStateChangeLogs] $filter;
-    SET @deletedChangeLogs = @@ROWCOUNT;
+    DELETE FROM [dbo].[Revisions] $filter;
+    SET @deletedRevisions = @@ROWCOUNT;
 END
 
-IF OBJECT_ID(N'dbo.CollaborationTurnDigests', N'U') IS NOT NULL
+IF OBJECT_ID(N'dbo.TurnDigests', N'U') IS NOT NULL
 BEGIN
-    DELETE FROM [dbo].[CollaborationTurnDigests] $filter;
+    DELETE FROM [dbo].[TurnDigests] $filter;
     SET @deletedDigests = @@ROWCOUNT;
 END
 
-DELETE FROM [dbo].[UserCollaborationStates] $filter;
-SET @deleted = @@ROWCOUNT;
+IF OBJECT_ID(N'dbo.Beliefs', N'U') IS NOT NULL
+BEGIN
+    DELETE FROM [dbo].[Beliefs] $filter;
+    SET @deletedBeliefs = @@ROWCOUNT;
+END
+
+DELETE FROM [dbo].[BeliefDocuments] $filter;
+SET @deletedDocs = @@ROWCOUNT;
+
+IF OBJECT_ID(N'dbo.Interactions', N'U') IS NOT NULL
+BEGIN
+    DELETE FROM [dbo].[Interactions] $filter;
+    SET @deletedInteractions = @@ROWCOUNT;
+END
 
 DECLARE @cleared INT = 0;
 IF COL_LENGTH(N'dbo.Contracts', N'LastSelectedAt') IS NOT NULL
@@ -86,7 +109,7 @@ BEGIN
     SET @cleared = @@ROWCOUNT;
 END
 
-SELECT @deleted AS DeletedCount, @cleared AS ClearedSelectionStamps, @deletedDigests AS DeletedDigests, @deletedChangeLogs AS DeletedChangeLogs;
+SELECT @deletedDocs AS DeletedDocuments, @cleared AS ClearedSelectionStamps, @deletedBeliefs AS DeletedBeliefs, @deletedDigests AS DeletedDigests, @deletedRevisions AS DeletedRevisions, @deletedInteractions AS DeletedInteractions;
 "@
 
 $result = sqlcmd -S $Server -E -d $Database -h -1 -W -Q $query
@@ -95,10 +118,24 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $nums = @($result | Where-Object { $_ -match '^\d+$' })
-$deleted = if ($nums.Count -ge 1) { $nums[0] } else { '0' }
+$deletedDocs = if ($nums.Count -ge 1) { $nums[0] } else { '0' }
 $cleared = if ($nums.Count -ge 2) { $nums[1] } else { '0' }
-$deletedDigests = if ($nums.Count -ge 3) { $nums[2] } else { '0' }
-$deletedChangeLogs = if ($nums.Count -ge 4) { $nums[3] } else { '0' }
+$deletedBeliefs = if ($nums.Count -ge 3) { $nums[2] } else { '0' }
+$deletedDigests = if ($nums.Count -ge 4) { $nums[3] } else { '0' }
+$deletedRevisions = if ($nums.Count -ge 5) { $nums[4] } else { '0' }
+$deletedInteractions = if ($nums.Count -ge 6) { $nums[5] } else { '0' }
 
-Write-Host "Deleted $deleted collaboration profile row(s); cleared $cleared contract LastSelectedAt stamp(s); deleted $deletedDigests turn digest row(s); deleted $deletedChangeLogs change-log row(s)."
-Write-Host "Reload Select Contract to see app defaults and the designed DemoSortOrder trio."
+Write-Host "Deleted $deletedDocs belief document(s); $deletedBeliefs belief row(s); $deletedDigests turn digest(s); $deletedRevisions revision(s); $deletedInteractions interaction(s); cleared $cleared contract LastSelectedAt stamp(s)."
+
+if ($IncludeFileState) {
+    $dataRoot = Join-Path $PSScriptRoot '..\src\AdaptiveTeamBuilderSvc\data'
+    foreach ($sub in 'interactions', 'profiles', 'runs', 'shadow-counters') {
+        $dir = Join-Path $dataRoot $sub
+        if (Test-Path $dir) {
+            Remove-Item -Recurse -Force $dir
+            Write-Host "Removed file state: $sub/"
+        }
+    }
+}
+
+Write-Host "Reload Select Contract to see the seeded belief document and the designed DemoSortOrder trio."

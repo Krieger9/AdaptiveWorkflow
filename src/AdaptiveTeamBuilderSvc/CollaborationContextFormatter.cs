@@ -203,7 +203,7 @@ public static class CollaborationContextFormatter
             {
                 sb.AppendLine(
                     $"  flag: likely-mistake — expand→collapse on {curr.ControlId} within {gap}ms "
-                    + "(<={LikelyMistakeMs}ms); down-weight as accidental toggle.");
+                    + "(<={LikelyMistakeMs}ms); discount as accidental toggle.");
             }
             else if (prev.Action == "control.expand" && gap >= DeliberateDwellMs)
             {
@@ -644,7 +644,7 @@ public static class CollaborationContextFormatter
 
         sb.AppendLine(
             "  digest rule: if ≥2 recent digests agree on a new pattern/signal and contradict "
-            + "activeSummary, rewrite TendencyProse to the new habit and drop the old claim. "
+            + "activeSummary, revise the belief to the new habit and drop the old claim. "
             + "pattern=keep-top-two-then-select (or expanded=2/3 with keep-top-2 ranks) overrides "
             + "a sticky expand-one claim; expand-one digests override sticky keep-top-two. "
             + "The same rule applies to the display= token: if ≥2 recent digests show "

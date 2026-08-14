@@ -9,6 +9,7 @@
 param(
     [string]$Server = '(localdb)\MSSQLLocalDB',
     [string]$Database = 'AdaptiveTeamBuilder',
-    [Guid]$UserId
+    [Guid]$UserId,
+    [switch]$IncludeFileState
 )
 & "$PSScriptRoot\scripts\reset-collaboration-profile.ps1" @PSBoundParameters

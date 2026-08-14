@@ -490,3 +490,10 @@ dist/
 # Local overrides
 appsettings.*.local.json
 **/Properties/launchSettings.local.json
+
+# Adaptive collaboration framework runtime state (glossary files stay tracked)
+src/AdaptiveTeamBuilderSvc/data/interactions/
+src/AdaptiveTeamBuilderSvc/data/profiles/
+src/AdaptiveTeamBuilderSvc/data/runs/
+src/AdaptiveTeamBuilderSvc/data/shadow-counters/
+src/AdaptiveTeamBuilderSvc/logs/
