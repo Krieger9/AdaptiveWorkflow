@@ -12,14 +12,19 @@ import {
 import {
   assembleSelectContractContext,
   assembleSelectContractObservations,
+  contractChoiceSetItem,
 } from '../collaboration/assembleSelectContractContext'
-import { createAppTendencyBundle } from '../collaboration/appDefaults'
+import { SELECT_CONTRACT_SCREEN_ANNOTATIONS } from '../collaboration/annotations'
+import { APP_DOMAIN_DESCRIPTION, createDefaultBeliefProfile } from '../collaboration/appDefaults'
+import { sessionId } from '../collaboration/observationBuffer'
+import { Surface } from '../collaboration/surface'
 import {
-  SELECT_CONTRACT_SCREEN_ID,
+  CONTRACTS_LIST_SURFACE_ID,
+  CONTRACTS_PAGE_SURFACE_ID,
+  type BeliefProfile,
   type CollaborationSuggestion,
-  type CollaborationTendencyBundle,
 } from '../collaboration/types'
-import { useScreenObservations } from '../collaboration/useScreenObservations'
+import { useSurfaceObservations } from '../collaboration/useSurfaceObservations'
 import './ContractsPage.css'
 
 const PROFILE_REFRESH_DELAY_MS = 750
@@ -276,7 +281,31 @@ function relativeBarPercent(value: number | null, scale: SignalScale | undefined
   return ((value - scale.min) / (scale.max - scale.min)) * 100
 }
 
-export function ContractsPage({ userId, onSelect, onError }: ContractsPageProps) {
+/**
+ * Contracts page wrapped in the surface framework: any new page gets instrumentation
+ * by declaring <Surface> wrappers like these — no hand-written assembler needed.
+ */
+export function ContractsPage(props: ContractsPageProps) {
+  return (
+    <Surface
+      id={CONTRACTS_PAGE_SURFACE_ID}
+      title="Contracts"
+      purpose="Pick the delivery engagement to staff next from the current contract portfolio."
+      domain={APP_DOMAIN_DESCRIPTION}
+    >
+      <Surface
+        id={CONTRACTS_LIST_SURFACE_ID}
+        title="Select a contract"
+        purpose={SELECT_CONTRACT_SCREEN_ANNOTATIONS.purpose}
+        annotations={SELECT_CONTRACT_SCREEN_ANNOTATIONS}
+      >
+        <ContractsPageInner {...props} />
+      </Surface>
+    </Surface>
+  )
+}
+
+function ContractsPageInner({ userId, onSelect, onError }: ContractsPageProps) {
   const [contracts, setContracts] = useState<ContractListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(() => new Set())
@@ -284,16 +313,28 @@ export function ContractsPage({ userId, onSelect, onError }: ContractsPageProps)
   const [detailLoadingIds, setDetailLoadingIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   )
-  const [tendencies, setTendencies] = useState<CollaborationTendencyBundle>(
-    createAppTendencyBundle(),
+  const [profile, setProfile] = useState<BeliefProfile>(
+    createDefaultBeliefProfile(),
   )
   const [advising, setAdvising] = useState(false)
   const [lastAdvise, setLastAdvise] = useState<CollaborationAdviseResponse | null>(null)
   const [debugOpen, setDebugOpen] = useState(false)
   const [signalsView, setSignalsView] = useState<SignalsViewMode>('values')
 
-  const { emit, emitSignalFocus, emitSignalActivate, drain, peek } = useScreenObservations(
-    SELECT_CONTRACT_SCREEN_ID,
+  const { emit, emitSignalFocus, emitSignalActivate, drain, peek } = useSurfaceObservations()
+
+  const contractEntity = useCallback(
+    (contractId: string) => {
+      const item = contracts.find((c) => c.id === contractId)
+      return item
+        ? { type: 'contract', ...contractChoiceSetItem(item) }
+        : undefined
+    },
+    [contracts],
+  )
+  const contractChoiceSet = useCallback(
+    () => contracts.map(contractChoiceSetItem),
+    [contracts],
   )
 
   const primarySuggestion = lastAdvise?.suggestions[0] ?? null
@@ -323,7 +364,7 @@ export function ContractsPage({ userId, onSelect, onError }: ContractsPageProps)
   const refreshProfileSoon = useCallback(() => {
     window.setTimeout(() => {
       void getCollaborationProfile()
-        .then((response) => setTendencies(response.tendencies))
+        .then((response) => setProfile(response.profile))
         .catch(() => {
           /* demo panel refresh is best-effort */
         })
@@ -344,9 +385,9 @@ export function ContractsPage({ userId, onSelect, onError }: ContractsPageProps)
           return
         }
 
-        const profile = profileResponse?.tendencies ?? createAppTendencyBundle()
+        const profileResult = profileResponse?.profile ?? createDefaultBeliefProfile()
         setContracts(items)
-        setTendencies(profile)
+        setProfile(profileResult)
         setExpandedIds(new Set())
         setDetailsById({})
         setSignalsView('values')
@@ -363,7 +404,7 @@ export function ContractsPage({ userId, onSelect, onError }: ContractsPageProps)
               contracts: items,
               expandedIds: new Set(),
               detailsById: {},
-              events: peek(),
+              interactions: peek(),
               signalsDisplay: 'values',
             }),
           )
@@ -379,9 +420,37 @@ export function ContractsPage({ userId, onSelect, onError }: ContractsPageProps)
               ? layout.signalsDisplay
               : 'values'
           setSignalsView(nextSignals)
+          if (nextSignals !== 'values') {
+            // Auto-applied by the agent, not chosen by the user — causation stays honest.
+            emit('view.change', {
+              label: 'signals-display',
+              causation: 'agent-applied',
+              meta: {
+                preferenceAxis: 'signalsDisplay',
+                from: 'values',
+                to: nextSignals,
+                meaning: 'agent-applied-preferred-signals-display',
+              },
+            })
+          }
 
           const bootstrapIds = resolveBootstrapExpandIds(items, layout)
           if (bootstrapIds.length > 0) {
+            const choiceSet = items.map(contractChoiceSetItem)
+            for (const contractId of bootstrapIds) {
+              const item = items.find((c) => c.id === contractId)
+              emit('control.expand', {
+                controlId: contractId,
+                label: item ? `${item.code} ${item.title}` : contractId,
+                causation: 'agent-applied',
+                choiceSet,
+                meta: {
+                  meaning: 'agent-applied-preferred-layout-expand',
+                  fromDetailLevel: 'summary',
+                  toDetailLevel: 'extended',
+                },
+              })
+            }
             const bootstrapExpandedIds = new Set(bootstrapIds)
             setExpandedIds(bootstrapExpandedIds)
             setDetailLoadingIds(new Set(bootstrapExpandedIds))
@@ -427,18 +496,18 @@ export function ContractsPage({ userId, onSelect, onError }: ContractsPageProps)
     return () => {
       cancelled = true
     }
-  }, [onError, peek])
+  }, [emit, onError, peek])
 
   const runAdvise = useCallback(
     async (
-      events: ReturnType<typeof peek>,
+      interactions: ReturnType<typeof peek>,
       options?: { openDebug?: boolean },
     ) => {
       const request = assembleSelectContractContext({
         contracts,
         expandedIds,
         detailsById,
-        events,
+        interactions,
         signalsDisplay: signalsView,
       })
       const response = await adviseCollaboration(request)
@@ -458,14 +527,15 @@ export function ContractsPage({ userId, onSelect, onError }: ContractsPageProps)
       nextDetailsById?: Record<string, ContractDetail>
       nextSignalsDisplay?: SignalsViewMode
     }) => {
-      const events = drain()
+      const interactions = drain()
       const response = await submitCollaborationObservations(
         assembleSelectContractObservations({
           userId,
+          sessionId,
           contracts,
           expandedIds: options?.nextExpandedIds ?? expandedIds,
           detailsById: options?.nextDetailsById ?? detailsById,
-          events,
+          interactions,
           signalsDisplay: options?.nextSignalsDisplay ?? signalsView,
         }),
       )
@@ -496,6 +566,8 @@ export function ContractsPage({ userId, onSelect, onError }: ContractsPageProps)
     emit('control.expand', {
       controlId: contractId,
       label,
+      entity: contractEntity(contractId),
+      choiceSet: contractChoiceSet(),
       meta: {
         meaning: 'show-extended-detail',
         fromDetailLevel: 'summary',
@@ -546,6 +618,7 @@ export function ContractsPage({ userId, onSelect, onError }: ContractsPageProps)
       emit('control.collapse', {
         controlId: contractId,
         label,
+        entity: contractEntity(contractId),
         meta: {
           meaning: 'hide-extended-detail',
           fromDetailLevel: 'extended',
@@ -566,6 +639,8 @@ export function ContractsPage({ userId, onSelect, onError }: ContractsPageProps)
     emit('control.select', {
       controlId: contractId,
       label,
+      entity: contractEntity(contractId),
+      choiceSet: contractChoiceSet(),
       meta: {
         meaning: 'chose-engagement-to-staff',
         detailLevel: expandedIds.has(contractId) ? 'extended' : 'summary',
@@ -1059,17 +1134,17 @@ export function ContractsPage({ userId, onSelect, onError }: ContractsPageProps)
         >
           <summary>Collaboration context debug</summary>
           <div className="contracts-collab-debug-body">
-            <h3>User profile (demo)</h3>
+            <h3>Belief profile (demo)</h3>
             <pre>
-              {tendencies.userOverride ?? tendencies.appDefaults}
+              {profile.document}
               {'\n\n'}
-              source: {tendencies.source}
-              {tendencies.updatedAt ? `\nupdated: ${tendencies.updatedAt}` : ''}
+              source: {profile.source} · version: {profile.version}
+              {profile.updatedAt ? `\nupdated: ${profile.updatedAt}` : ''}
             </pre>
-            {tendencies.recentTurnDigests && tendencies.recentTurnDigests.length > 0 && (
+            {profile.recentTurnDigests && profile.recentTurnDigests.length > 0 && (
               <>
                 <h3>Recent decision digests</h3>
-                <pre>{tendencies.recentTurnDigests.map((d, i) => `${i + 1}) ${d}`).join('\n')}</pre>
+                <pre>{profile.recentTurnDigests.map((d, i) => `${i + 1}) ${d}`).join('\n')}</pre>
               </>
             )}
             {lastAdvise.preferredLayout && (

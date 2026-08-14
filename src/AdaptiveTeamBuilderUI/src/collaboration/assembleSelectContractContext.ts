@@ -4,12 +4,15 @@ import {
   contractCardAnnotations,
 } from './annotations'
 import { APP_DOMAIN_DESCRIPTION } from './appDefaults'
+import { assembleSurfaceContext, hashContext } from './assembleSurfaceContext'
 import {
-  SELECT_CONTRACT_SCREEN_ID,
+  CONTRACTS_LIST_SURFACE_ID,
+  CONTRACTS_PAGE_SURFACE_ID,
+  type ChoiceSetItem,
   type CollaborationAdviseRequest,
   type CollaborationControlSnapshot,
-  type CollaborationInteractionEvent,
   type CollaborationObservationsRequest,
+  type Interaction,
   type SignalsDisplayMode,
 } from './types'
 
@@ -28,6 +31,22 @@ function datasetSummary(item: ContractListItem, index: number): string {
     `margin ${item.estimatedMarginPercent}%, win ${item.winProbabilityPercent}%, ` +
     `delivery risk ${item.deliveryRiskName}`
   )
+}
+
+/** Compact attribute snapshot used for interaction choice sets. */
+export function contractChoiceSetItem(item: ContractListItem): ChoiceSetItem {
+  return {
+    id: item.id,
+    attrs: {
+      code: item.code,
+      title: item.title,
+      estimatedContractValue: String(item.estimatedContractValue),
+      estimatedProfit: String(item.estimatedProfit),
+      estimatedMarginPercent: String(item.estimatedMarginPercent),
+      winProbabilityPercent: String(item.winProbabilityPercent),
+      deliveryRisk: item.deliveryRiskName,
+    },
+  }
 }
 
 function toControlSnapshot(
@@ -84,13 +103,15 @@ function toControlSnapshot(
   }
 }
 
-function assemblePageContext(input: {
+type AssembleInput = {
   contracts: ContractListItem[]
   expandedIds: ReadonlySet<string>
   detailsById: Record<string, ContractDetail>
-  events: CollaborationInteractionEvent[]
+  interactions: Interaction[]
   signalsDisplay: SignalsDisplayMode | string
-}): CollaborationAdviseRequest {
+}
+
+function assemblePageContext(input: AssembleInput): CollaborationAdviseRequest {
   const controls = input.contracts.map((item) =>
     toControlSnapshot(
       item,
@@ -100,14 +121,17 @@ function assemblePageContext(input: {
     ),
   )
 
+  // Registry-driven generic assembler; the surface tree is declared by <Surface> wrappers.
+  const assembledContext = assembleSurfaceContext(CONTRACTS_PAGE_SURFACE_ID)
+
   return {
     app: {
       domainDescription: APP_DOMAIN_DESCRIPTION,
-      contractCount: input.contracts.length,
+      itemCount: input.contracts.length,
       datasetSummaries: input.contracts.map(datasetSummary),
     },
-    screen: {
-      screenId: SELECT_CONTRACT_SCREEN_ID,
+    surface: {
+      surfacePath: [CONTRACTS_PAGE_SURFACE_ID, CONTRACTS_LIST_SURFACE_ID],
       title: 'Select a contract',
       availableActions: [
         'set-signals-display',
@@ -120,37 +144,31 @@ function assemblePageContext(input: {
         signalsDisplay: input.signalsDisplay,
         expandedControlIds: [...input.expandedIds],
       },
+      assembledContext: assembledContext || null,
+      contextHash: assembledContext ? hashContext(assembledContext) : null,
       annotations: SELECT_CONTRACT_SCREEN_ANNOTATIONS,
     },
     controls,
-    events: input.events,
+    interactions: input.interactions,
   }
 }
 
-export function assembleSelectContractContext(input: {
-  contracts: ContractListItem[]
-  expandedIds: ReadonlySet<string>
-  detailsById: Record<string, ContractDetail>
-  events: CollaborationInteractionEvent[]
-  signalsDisplay: SignalsDisplayMode | string
-}): CollaborationAdviseRequest {
+export function assembleSelectContractContext(
+  input: AssembleInput,
+): CollaborationAdviseRequest {
   return assemblePageContext(input)
 }
 
-export function assembleSelectContractObservations(input: {
-  userId: string
-  contracts: ContractListItem[]
-  expandedIds: ReadonlySet<string>
-  detailsById: Record<string, ContractDetail>
-  events: CollaborationInteractionEvent[]
-  signalsDisplay: SignalsDisplayMode | string
-}): CollaborationObservationsRequest {
+export function assembleSelectContractObservations(
+  input: AssembleInput & { userId: string; sessionId: string },
+): CollaborationObservationsRequest {
   const page = assemblePageContext(input)
   return {
     userId: input.userId,
+    sessionId: input.sessionId,
     app: page.app,
-    screen: page.screen,
+    surface: page.surface,
     controls: page.controls,
-    events: page.events,
+    interactions: page.interactions,
   }
 }

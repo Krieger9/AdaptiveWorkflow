@@ -1,11 +1,22 @@
-import type { CollaborationInteractionEvent, InteractionEventType } from './types'
+import type {
+  Causation,
+  ChoiceSetItem,
+  EntityRef,
+  Interaction,
+  InteractionAction,
+} from './types'
 
-const buffer: CollaborationInteractionEvent[] = []
+/** One session per app load; interactions carry it for replay grouping. */
+export const sessionId = createSessionId()
 
-/** Last change-action timestamp per screen (excludes signal.focus / screen.enter/leave). */
-const lastChangeAtByScreen = new Map<string, number>()
+let sequence = 0
 
-const CHANGE_ACTION_TYPES = new Set([
+const buffer: Interaction[] = []
+
+/** Last change-action timestamp per surface path (excludes signal.focus / surface.enter/leave). */
+const lastChangeAtBySurface = new Map<string, number>()
+
+const CHANGE_ACTIONS = new Set([
   'control.expand',
   'control.collapse',
   'control.select',
@@ -13,83 +24,112 @@ const CHANGE_ACTION_TYPES = new Set([
   'signal.activate',
 ])
 
-export type RecordObservationInput = {
-  screenId: string
-  type: InteractionEventType | string
+function createSessionId(): string {
+  const now = new Date()
+  const stamp =
+    `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, '0')}` +
+    `${String(now.getUTCDate()).padStart(2, '0')}t` +
+    `${String(now.getUTCHours()).padStart(2, '0')}${String(now.getUTCMinutes()).padStart(2, '0')}`
+  return `s_${stamp}_${Math.random().toString(36).slice(2, 6)}`
+}
+
+export type RecordInteractionInput = {
+  surfacePath: string[]
+  action: InteractionAction | string
   controlId?: string | null
   label?: string | null
+  valueBefore?: string | null
+  valueAfter?: string | null
+  /** Defaults to 'user'; agent-applied / restored / system-default must be explicit. */
+  causation?: Causation | string
+  entity?: EntityRef | null
+  choiceSet?: ChoiceSetItem[] | null
   meta?: Record<string, string> | null
   at?: string
 }
 
-export function isChangeActionType(type: string): boolean {
-  return CHANGE_ACTION_TYPES.has(type)
+export function isChangeAction(action: string): boolean {
+  return CHANGE_ACTIONS.has(action)
 }
 
-export function recordObservation(input: RecordObservationInput): CollaborationInteractionEvent {
+export function recordInteraction(input: RecordInteractionInput): Interaction {
   const at = input.at ?? new Date().toISOString()
   const atMs = Date.parse(at)
+  const surfaceKey = input.surfacePath.join(' / ')
   const meta: Record<string, string> = { ...(input.meta ?? {}) }
+  const causation = input.causation ?? 'user'
 
-  if (isChangeActionType(input.type) && !Number.isNaN(atMs)) {
-    const previous = lastChangeAtByScreen.get(input.screenId)
+  // Timing gaps only measure the user's own pace, not system-applied changes.
+  if (causation === 'user' && isChangeAction(input.action) && !Number.isNaN(atMs)) {
+    const previous = lastChangeAtBySurface.get(surfaceKey)
     if (previous != null) {
       meta.sincePreviousMs = String(Math.max(0, atMs - previous))
     }
-    lastChangeAtByScreen.set(input.screenId, atMs)
+    lastChangeAtBySurface.set(surfaceKey, atMs)
   }
 
-  const event: CollaborationInteractionEvent = {
+  sequence += 1
+  const interaction: Interaction = {
+    id: `i_${sequence}_${Math.random().toString(36).slice(2, 8)}`,
     at,
-    screenId: input.screenId,
-    type: input.type,
+    sessionId,
+    seq: sequence,
+    surfacePath: [...input.surfacePath],
+    action: input.action,
     controlId: input.controlId ?? null,
     label: input.label ?? null,
+    valueBefore: input.valueBefore ?? null,
+    valueAfter: input.valueAfter ?? null,
+    causation,
+    entity: input.entity ?? null,
+    choiceSet: input.choiceSet ?? null,
     meta: Object.keys(meta).length > 0 ? meta : null,
   }
-  buffer.push(event)
-  return event
+  buffer.push(interaction)
+  return interaction
 }
 
-export function peekObservations(screenId?: string): CollaborationInteractionEvent[] {
-  if (!screenId) {
-    return [...buffer]
+function matchesSurface(interaction: Interaction, surfacePathPrefix?: string[]): boolean {
+  if (!surfacePathPrefix || surfacePathPrefix.length === 0) {
+    return true
   }
-  return buffer.filter((event) => event.screenId === screenId)
+  return surfacePathPrefix.every((id, index) => interaction.surfacePath[index] === id)
 }
 
-/** Removes and returns matching events (all events if screenId omitted). */
-export function drainObservations(screenId?: string): CollaborationInteractionEvent[] {
-  if (!screenId) {
+export function peekInteractions(surfacePathPrefix?: string[]): Interaction[] {
+  return buffer.filter((interaction) => matchesSurface(interaction, surfacePathPrefix))
+}
+
+/** Removes and returns matching interactions (all if no prefix given). */
+export function drainInteractions(surfacePathPrefix?: string[]): Interaction[] {
+  if (!surfacePathPrefix || surfacePathPrefix.length === 0) {
     const all = [...buffer]
     buffer.length = 0
-    lastChangeAtByScreen.clear()
+    lastChangeAtBySurface.clear()
     return all
   }
 
-  const kept: CollaborationInteractionEvent[] = []
-  const drained: CollaborationInteractionEvent[] = []
-  for (const event of buffer) {
-    if (event.screenId === screenId) {
-      drained.push(event)
+  const kept: Interaction[] = []
+  const drained: Interaction[] = []
+  for (const interaction of buffer) {
+    if (matchesSurface(interaction, surfacePathPrefix)) {
+      drained.push(interaction)
     } else {
-      kept.push(event)
+      kept.push(interaction)
     }
   }
   buffer.length = 0
   buffer.push(...kept)
-  lastChangeAtByScreen.delete(screenId)
   return drained
 }
 
-export function clearObservations(screenId?: string): void {
-  if (!screenId) {
+export function clearInteractions(surfacePathPrefix?: string[]): void {
+  if (!surfacePathPrefix || surfacePathPrefix.length === 0) {
     buffer.length = 0
-    lastChangeAtByScreen.clear()
+    lastChangeAtBySurface.clear()
     return
   }
-  const kept = buffer.filter((event) => event.screenId !== screenId)
+  const kept = buffer.filter((interaction) => !matchesSurface(interaction, surfacePathPrefix))
   buffer.length = 0
   buffer.push(...kept)
-  lastChangeAtByScreen.delete(screenId)
 }

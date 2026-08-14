@@ -1,3 +1,21 @@
+import type {
+  BeliefProfile,
+  CollaborationAdviseRequest,
+  CollaborationAdviseResponse,
+  CollaborationObservationsRequest,
+  CollaborationObservationsResponse,
+  CollaborationProfileResponse,
+  Interaction,
+} from '../collaboration/types'
+
+export type {
+  CollaborationAdviseRequest,
+  CollaborationAdviseResponse,
+  CollaborationObservationsRequest,
+  CollaborationObservationsResponse,
+  CollaborationProfileResponse,
+}
+
 export const apiBaseUrl =
   import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5106'
 
@@ -389,86 +407,6 @@ export function greetingName(user: User): string {
   return user.userName
 }
 
-export type CollaborationAdviseRequest = {
-  app: {
-    domainDescription: string
-    contractCount: number
-    datasetSummaries: string[]
-  }
-  screen: {
-    screenId: string
-    title: string
-    availableActions: string[]
-    viewState: {
-      signalsDisplay: string
-      expandedControlIds: string[]
-    }
-    annotations?: Record<string, string> | null
-  }
-  controls: {
-    controlId: string
-    controlType: string
-    label: string
-    expanded: boolean
-    data: Record<string, string>
-    detailData?: Record<string, string> | null
-    annotations?: Record<string, string> | null
-  }[]
-  events: {
-    at: string
-    screenId: string
-    type: string
-    controlId?: string | null
-    label?: string | null
-    meta?: Record<string, string> | null
-  }[]
-}
-
-export type CollaborationAdviseResponse = {
-  promptPreview: string
-  suggestions: {
-    id: string
-    kind: string
-    label: string
-    targetControlId: string | null
-    payload?: Record<string, string> | null
-  }[]
-  preferredLayout?: {
-    expandAll: boolean
-    signalsDisplay?: string | null
-    rationale?: string | null
-    expandTopCount?: number | null
-    expandBySignal?: string | null
-  } | null
-}
-
-export type CollaborationProfileResponse = {
-  tendencies: {
-    appDefaults: string
-    userOverride: string | null
-    updatedAt: string | null
-    source: string
-    recentTurnDigests?: string[] | null
-  }
-}
-
-export type CollaborationObservationsRequest = {
-  userId: string
-  app: CollaborationAdviseRequest['app']
-  screen: CollaborationAdviseRequest['screen']
-  controls: CollaborationAdviseRequest['controls']
-  events: CollaborationAdviseRequest['events']
-}
-
-export type CollaborationObservationsResponse = {
-  userId: string
-  acceptedEventCount: number
-  status: string
-  promptPreview: string
-  suggestions: CollaborationAdviseResponse['suggestions']
-  preferredLayout?: CollaborationAdviseResponse['preferredLayout']
-}
-
 export async function getCollaborationProfile(): Promise<CollaborationProfileResponse> {
   const response = await fetch(`${apiBaseUrl}/api/collaboration/profile`, {
     headers: await authHeaders(),
@@ -498,3 +436,89 @@ export async function submitCollaborationObservations(
   return parseJson<CollaborationObservationsResponse>(response)
 }
 
+
+// --- Dev-only observability endpoints (mapped only in Development) -----------------
+
+export type AgentRunSummary = {
+  runId: string
+  ts: string
+  tier: number
+  agent: string
+  source: string
+  userId: string
+  sessionId?: string | null
+  trigger: string
+  validationResult?: string | null
+  latencyMs: number
+}
+
+export type AgentRunRecord = AgentRunSummary & {
+  promptVersion: string
+  contextHash?: string | null
+  glossaryVersion: string
+  inputInteractionIds: string[]
+  profileVersionIn?: number | null
+  profileVersionOut?: number | null
+  rawRequest: string
+  rawResponse?: string | null
+  profileDiff?: string | null
+  approvals?: {
+    adaptationId: string
+    adaptationKind: string
+    approved: boolean
+    policy: string
+    belief?: string | null
+    rationale?: string | null
+    decidedAt: string
+  }[]
+  shadowCounters?: Record<string, { for: number; against: number; firstSeen?: string | null }> | null
+  error?: string | null
+}
+
+export async function listCollaborationRuns(take = 50): Promise<AgentRunSummary[]> {
+  const response = await fetch(`${apiBaseUrl}/api/collaboration/runs?take=${take}`, {
+    headers: await authHeaders(),
+  })
+  return parseJson<AgentRunSummary[]>(response)
+}
+
+export async function getCollaborationRun(runId: string): Promise<AgentRunRecord> {
+  const response = await fetch(`${apiBaseUrl}/api/collaboration/runs/${runId}`, {
+    headers: await authHeaders(),
+  })
+  return parseJson<AgentRunRecord>(response)
+}
+
+export async function listCollaborationSessions(): Promise<string[]> {
+  const response = await fetch(`${apiBaseUrl}/api/collaboration/sessions`, {
+    headers: await authHeaders(),
+  })
+  return parseJson<string[]>(response)
+}
+
+export async function getCollaborationSessionInteractions(
+  sessionId: string,
+): Promise<Interaction[]> {
+  const response = await fetch(
+    `${apiBaseUrl}/api/collaboration/sessions/${sessionId}/interactions`,
+    { headers: await authHeaders() },
+  )
+  return parseJson<Interaction[]>(response)
+}
+
+export async function replayCollaborationSession(request: {
+  sessionId: string
+  promptOverride?: string | null
+}): Promise<AgentRunRecord> {
+  const response = await fetch(`${apiBaseUrl}/api/collaboration/replay`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify(request),
+  })
+  return parseJson<AgentRunRecord>(response)
+}
+
+export async function getCollaborationProfileDocument(): Promise<BeliefProfile> {
+  const response = await getCollaborationProfile()
+  return response.profile
+}
