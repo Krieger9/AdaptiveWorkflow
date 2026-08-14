@@ -40,5 +40,7 @@ sqlpackage /Action:Publish ^
   /SourceFile:database/AdaptiveTeamBuilder.database/bin/Debug/AdaptiveTeamBuilder.database.dacpac ^
   /TargetServerName:(localdb)\MSSQLLocalDB ^
   /TargetDatabaseName:AdaptiveTeamBuilder ^
-  /TargetTrustServerCertificate:True
+  /TargetTrustServerCertificate:True ^
+  /p:DropObjectsNotInSource=True ^
+  /p:DoNotDropObjectTypes=Logins;Users;Permissions;RoleMembership
 ```

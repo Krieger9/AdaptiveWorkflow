@@ -4,9 +4,7 @@
 
 .DESCRIPTION
   Deletes rows from dbo.Revisions, dbo.TurnDigests, dbo.Beliefs, dbo.BeliefDocuments
-  and dbo.Interactions, drops legacy pre-framework tables (dbo.CollaborationStateChangeLogs,
-  dbo.CollaborationTurnDigests, dbo.UserCollaborationStates) if they still exist, and
-  clears Contracts.LastSelectedAt so the Select Contract
+  and dbo.Interactions, and clears Contracts.LastSelectedAt so the Select Contract
   demo rotation returns to the designed DemoSortOrder head.
   After reset, GET /api/collaboration/profile returns the seeded default belief
   document until the profile updater learns again.
@@ -103,12 +101,6 @@ BEGIN
     DELETE FROM [dbo].[Interactions] $filter;
     SET @deletedInteractions = @@ROWCOUNT;
 END
-
--- Drop legacy tables from the pre-framework schema (replaced by Revisions, TurnDigests,
--- and BeliefDocuments). sqlpackage publish leaves objects missing from the source project.
-IF OBJECT_ID(N'dbo.CollaborationStateChangeLogs', N'U') IS NOT NULL DROP TABLE [dbo].[CollaborationStateChangeLogs];
-IF OBJECT_ID(N'dbo.CollaborationTurnDigests', N'U') IS NOT NULL DROP TABLE [dbo].[CollaborationTurnDigests];
-IF OBJECT_ID(N'dbo.UserCollaborationStates', N'U') IS NOT NULL DROP TABLE [dbo].[UserCollaborationStates];
 
 DECLARE @cleared INT = 0;
 IF COL_LENGTH(N'dbo.Contracts', N'LastSelectedAt') IS NOT NULL

@@ -80,29 +80,21 @@ BEGIN
 END
 "@ | Out-Null
 
+# DropObjectsNotInSource removes anything not defined in the .sqlproj (legacy tables,
+# __EFMigrationsHistory, etc.) so the target always matches the project exactly.
+# Security objects are excluded so logins/users/permissions survive the publish.
 & sqlpackage `
     /Action:Publish `
     /SourceFile:$dacpac `
     /TargetServerName:$Server `
     /TargetDatabaseName:$Database `
     /TargetTrustServerCertificate:True `
-    /p:BlockOnPossibleDataLoss=false
+    /p:BlockOnPossibleDataLoss=false `
+    /p:DropObjectsNotInSource=true `
+    /p:DoNotDropObjectTypes='Logins;Users;Permissions;RoleMembership'
 
 if ($LASTEXITCODE -ne 0) {
     throw "sqlpackage publish failed with exit code $LASTEXITCODE."
 }
-
-# Remove leftover EF migration history if a prior migration-based bootstrap created it.
-Write-Host "Dropping legacy __EFMigrationsHistory (if present)..."
-sqlcmd -S $Server -E -d $Database -Q "IF OBJECT_ID(N'[dbo].[__EFMigrationsHistory]', N'U') IS NOT NULL DROP TABLE [dbo].[__EFMigrationsHistory];" | Out-Null
-
-# Remove legacy collaboration tables replaced by BeliefDocuments/TurnDigests/Revisions.
-# sqlpackage publish does not drop objects missing from the source project, so these linger.
-Write-Host "Dropping legacy collaboration tables (if present)..."
-sqlcmd -S $Server -E -d $Database -Q @"
-IF OBJECT_ID(N'[dbo].[CollaborationStateChangeLogs]', N'U') IS NOT NULL DROP TABLE [dbo].[CollaborationStateChangeLogs];
-IF OBJECT_ID(N'[dbo].[CollaborationTurnDigests]', N'U') IS NOT NULL DROP TABLE [dbo].[CollaborationTurnDigests];
-IF OBJECT_ID(N'[dbo].[UserCollaborationStates]', N'U') IS NOT NULL DROP TABLE [dbo].[UserCollaborationStates];
-"@ | Out-Null
 
 Write-Host "Local database schema is up to date."
