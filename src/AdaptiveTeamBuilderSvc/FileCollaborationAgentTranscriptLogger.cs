@@ -15,13 +15,13 @@ public sealed class CollaborationAgentTranscript
     public required string Prompt { get; init; }
 
     /// <summary>Profile retrieved from store before this agent turn.</summary>
-    public CollaborationTendencyBundleDto? RetrievedProfile { get; init; }
+    public BeliefProfileDto? RetrievedProfile { get; init; }
 
-    /// <summary>Screen/view context for the turn, when available.</summary>
+    /// <summary>Surface/view context for the turn, when available.</summary>
     public CollaborationProfileUpdateContext? TurnContext { get; init; }
 
     /// <summary>Semantic events for the turn, when available.</summary>
-    public IReadOnlyList<CollaborationInteractionEventDto>? Events { get; init; }
+    public IReadOnlyList<InteractionDto>? Events { get; init; }
 
     public string? ResponseText { get; init; }
 
@@ -133,9 +133,9 @@ public sealed class FileCollaborationAgentTranscriptLogger(
             sb.AppendLine("```text");
             if (transcript.TurnContext is { } ctx)
             {
-                if (!string.IsNullOrWhiteSpace(ctx.ScreenId))
+                if (!string.IsNullOrWhiteSpace(ctx.SurfacePath))
                 {
-                    sb.AppendLine($"Screen: {ctx.ScreenTitle ?? ctx.ScreenId} ({ctx.ScreenId})");
+                    sb.AppendLine($"Surface: {ctx.SurfaceTitle ?? ctx.SurfacePath} ({ctx.SurfacePath})");
                 }
 
                 if (ctx.ViewState is not null)

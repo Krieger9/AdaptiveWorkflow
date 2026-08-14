@@ -1,0 +1,37 @@
+{
+  "version": "2026-08-14",
+  "dimensions": [
+    {
+      "id": "information-form",
+      "description": "How a numeric metric is rendered.",
+      "values": {
+        "bare": "Numeric value only, no visual encoding. In this app: the 'values' signals display.",
+        "trended": "Numeric value with an inline sparkline beside it. Not yet offered by this app.",
+        "charted": "A chart replaces the numeric value as the primary representation. In this app: the 'graph' signals display."
+      },
+      "origin": "seeded"
+    },
+    {
+      "id": "disclosure-default",
+      "description": "Whether a collapsible region starts open.",
+      "values": {
+        "collapsed": "Region starts closed; user opens what they want. In this app: summary contract cards.",
+        "expanded": "Region starts open; user closes what they don't want. In this app: extended staffing/scope detail.",
+        "selective": "Some subset starts open, chosen by a rule over the data. In this app: e.g. keep-top-two by Margin, expand-one by Profit."
+      },
+      "origin": "seeded"
+    },
+    {
+      "id": "selection-rule",
+      "description": "The predicate that explains which items a user chooses to inspect, when they inspect only some.",
+      "values": "open — the agent describes the rule in prose, e.g. 'the two highest-margin contracts'",
+      "origin": "seeded"
+    },
+    {
+      "id": "metric-attention",
+      "description": "Which metrics the user actually acts on, versus which are merely present.",
+      "values": "open — the agent names metrics in priority order, e.g. 'Margin, then Win prob.'",
+      "origin": "seeded"
+    }
+  ]
+}

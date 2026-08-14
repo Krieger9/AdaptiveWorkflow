@@ -38,12 +38,22 @@ public sealed class AdviseAgentSuggestion
     public string? TargetControlId { get; set; }
 
     public Dictionary<string, string>? Payload { get; set; }
+
+    /// <summary>Preference dimension the suggestion draws on, when known.</summary>
+    public string? Dimension { get; set; }
+
+    /// <summary>True when issued to resolve agent uncertainty rather than high conviction.</summary>
+    public bool IsProbe { get; set; }
+
+    /// <summary>Short rationale drawn from the belief's "What I'm leaning on".</summary>
+    public string? Rationale { get; set; }
 }
 
 /// <summary>Structured output from the CollaborationProfileUpdater agent.</summary>
 public sealed class ProfileUpdateAgentResult
 {
-    public string TendencyProse { get; set; } = string.Empty;
+    /// <summary>The complete updated markdown belief document.</summary>
+    public string ProfileDocument { get; set; } = string.Empty;
 
     /// <summary>
     /// Concise natural-language reason for the change, set only when the profile is actually
@@ -54,7 +64,7 @@ public sealed class ProfileUpdateAgentResult
 
 public static class AdviseAgentResultMapper
 {
-    public static IReadOnlyList<CollaborationSuggestionDto> ToSuggestions(
+    public static IReadOnlyList<SuggestionDto> ToSuggestions(
         AdviseAgentResult? result)
     {
         if (result?.Suggestions is not { Count: > 0 })
@@ -64,16 +74,19 @@ public static class AdviseAgentResultMapper
 
         return result.Suggestions
             .Where(s => !string.IsNullOrWhiteSpace(s.Kind) && !string.IsNullOrWhiteSpace(s.Label))
-            .Select(s => new CollaborationSuggestionDto(
+            .Select(s => new SuggestionDto(
                 string.IsNullOrWhiteSpace(s.Id) ? Guid.NewGuid().ToString("N") : s.Id,
                 s.Kind.Trim(),
                 s.Label.Trim(),
                 string.IsNullOrWhiteSpace(s.TargetControlId) ? null : s.TargetControlId,
-                s.Payload is { Count: > 0 } ? s.Payload : null))
+                s.Payload is { Count: > 0 } ? s.Payload : null,
+                string.IsNullOrWhiteSpace(s.Dimension) ? null : s.Dimension.Trim(),
+                s.IsProbe,
+                string.IsNullOrWhiteSpace(s.Rationale) ? null : s.Rationale.Trim()))
             .ToList();
     }
 
-    public static CollaborationPreferredLayoutDto? ToPreferredLayout(AdviseAgentResult? result)
+    public static PreferredLayoutDto? ToPreferredLayout(AdviseAgentResult? result)
     {
         if (result?.PreferredLayout is null)
         {
@@ -98,7 +111,7 @@ public static class AdviseAgentResultMapper
         // Signal-driven top-N wins over expand-all when both are present.
         var expandAll = layout.ExpandAll && expandTopCount is null;
 
-        return new CollaborationPreferredLayoutDto(
+        return new PreferredLayoutDto(
             expandAll,
             display,
             string.IsNullOrWhiteSpace(layout.Rationale) ? null : layout.Rationale.Trim(),

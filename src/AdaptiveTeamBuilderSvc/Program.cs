@@ -67,7 +67,7 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod());
 });
 
-builder.Services.AddScoped<ICollaborationProfileStore, EfCollaborationProfileStore>();
+builder.Services.AddScoped<IBeliefProfileStore, BeliefProfileStore>();
 builder.Services.Configure<AgentFrameworkOptions>(
     builder.Configuration.GetSection(AgentFrameworkOptions.SectionName));
 
@@ -76,6 +76,11 @@ var agentFramework = builder.Configuration
     .Get<AgentFrameworkOptions>() ?? new AgentFrameworkOptions();
 
 builder.Services.AddSingleton<ICollaborationAgentTranscriptLogger, FileCollaborationAgentTranscriptLogger>();
+builder.Services.AddSingleton<GlossaryProvider>();
+builder.Services.AddSingleton<IInteractionLog, FileInteractionLog>();
+builder.Services.AddSingleton<IAgentRunRecorder, FileAgentRunRecorder>();
+builder.Services.AddSingleton<ShadowCounterService>();
+builder.Services.AddSingleton<IAdaptationApprovalPolicy, AutoApproveAdaptationPolicy>();
 builder.Services.AddSingleton<StubCollaborationAdvisor>();
 builder.Services.AddSingleton<StubCollaborationProfileUpdater>();
 
@@ -94,7 +99,10 @@ else
 }
 
 builder.Services.AddSingleton<ICollaborationProfileUpdateQueue, CollaborationProfileUpdateQueue>();
-builder.Services.AddHostedService<CollaborationProfileUpdateBackgroundService>();
+// Registered as a resolvable singleton so the dev-only replay endpoint can reuse ProcessAsync.
+builder.Services.AddSingleton<CollaborationProfileUpdateBackgroundService>();
+builder.Services.AddHostedService(sp =>
+    sp.GetRequiredService<CollaborationProfileUpdateBackgroundService>());
 
 var app = builder.Build();
 
@@ -131,6 +139,6 @@ app.MapUserEndpoints();
 app.MapProfileEndpoints();
 app.MapTeamEndpoints();
 app.MapContractEndpoints();
-app.MapCollaborationEndpoints();
+app.MapCollaborationEndpoints(includeDevEndpoints: app.Environment.IsDevelopment());
 
 app.Run();

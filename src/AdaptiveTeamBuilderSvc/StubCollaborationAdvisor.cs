@@ -5,9 +5,9 @@ namespace AdaptiveTeamBuilderSvc;
 
 public interface ICollaborationAdvisor
 {
-    Task<CollaborationAdviseResponse> AdviseAsync(
-        CollaborationAdviseRequest request,
-        CollaborationTendencyBundleDto profile,
+    Task<AdviseResponse> AdviseAsync(
+        AdviseRequest request,
+        BeliefProfileDto profile,
         CancellationToken cancellationToken = default);
 }
 
@@ -19,9 +19,9 @@ public interface ICollaborationAdvisor
 public sealed class StubCollaborationAdvisor(
     ICollaborationAgentTranscriptLogger transcripts) : ICollaborationAdvisor
 {
-    public async Task<CollaborationAdviseResponse> AdviseAsync(
-        CollaborationAdviseRequest request,
-        CollaborationTendencyBundleDto profile,
+    public async Task<AdviseResponse> AdviseAsync(
+        AdviseRequest request,
+        BeliefProfileDto profile,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -34,13 +34,13 @@ public sealed class StubCollaborationAdvisor(
                 Prompt = response.PromptPreview,
                 RetrievedProfile = profile,
                 TurnContext = new CollaborationProfileUpdateContext(
-                    request.Screen.ScreenId,
-                    request.Screen.Title,
-                    request.Screen.ViewState,
-                    request.Screen.Annotations,
-                    request.App.ContractCount,
+                    string.Join(" / ", request.Surface.SurfacePath),
+                    request.Surface.Title,
+                    request.Surface.ViewState,
+                    request.Surface.Annotations,
+                    request.App.ItemCount,
                     request.Controls),
-                Events = request.Events,
+                Events = request.Interactions,
                 ResponseObject = new
                 {
                     preferredLayout = response.PreferredLayout,
@@ -51,20 +51,20 @@ public sealed class StubCollaborationAdvisor(
         return response;
     }
 
-    public CollaborationAdviseResponse Advise(
-        CollaborationAdviseRequest request,
-        CollaborationTendencyBundleDto profile)
+    public AdviseResponse Advise(
+        AdviseRequest request,
+        BeliefProfileDto profile)
     {
         var promptPreview = BuildPromptPreview(request, profile);
         var suggestions = BuildStubSuggestions(request, profile);
         var preferredLayout = BuildPreferredLayout(request, profile);
 
-        return new CollaborationAdviseResponse(promptPreview, suggestions, preferredLayout);
+        return new AdviseResponse(promptPreview, suggestions, preferredLayout);
     }
 
     public static string BuildPromptPreview(
-        CollaborationAdviseRequest request,
-        CollaborationTendencyBundleDto profile)
+        AdviseRequest request,
+        BeliefProfileDto profile)
     {
         var sb = new StringBuilder();
         sb.AppendLine(
@@ -78,34 +78,34 @@ public sealed class StubCollaborationAdvisor(
         sb.AppendLine();
         sb.AppendLine(request.App.DomainDescription);
         sb.AppendLine(
-            $"Portfolio size this turn: {request.App.ContractCount} contract(s).");
+            $"Portfolio size this turn: {request.App.ItemCount} contract(s).");
         sb.AppendLine();
 
-        sb.AppendLine($"Screen: {request.Screen.Title} ({request.Screen.ScreenId})");
-        if (request.Screen.Annotations is { Count: > 0 })
+        sb.AppendLine($"Surface: {request.Surface.Title} ({string.Join(" / ", request.Surface.SurfacePath)})");
+        if (request.Surface.Annotations is { Count: > 0 })
         {
             sb.AppendLine("Screen annotations:");
-            foreach (var pair in request.Screen.Annotations)
+            foreach (var pair in request.Surface.Annotations)
             {
                 sb.AppendLine($"  {pair.Key}: {pair.Value}");
             }
         }
 
         sb.AppendLine(CollaborationContextFormatter.FormatViewState(
-            request.Screen.ViewState,
-            request.App.ContractCount));
+            request.Surface.ViewState,
+            request.App.ItemCount));
         sb.AppendLine(
             CollaborationContextFormatter.FormatComparisonPattern(
-                request.Screen.ViewState,
-                request.App.ContractCount,
-                request.Events));
+                request.Surface.ViewState,
+                request.App.ItemCount,
+                request.Interactions));
         sb.AppendLine(
             CollaborationContextFormatter.FormatSignalRankComparison(
                 request.Controls,
-                request.Screen.ViewState,
-                request.Events));
+                request.Surface.ViewState,
+                request.Interactions));
         sb.AppendLine(
-            "Available adaptations: " + string.Join(", ", request.Screen.AvailableActions));
+            "Available adaptations: " + string.Join(", ", request.Surface.AvailableActions));
         sb.AppendLine();
 
         sb.AppendLine("Controls (semantic snapshots):");
@@ -144,9 +144,9 @@ public sealed class StubCollaborationAdvisor(
         sb.AppendLine(
             CollaborationContextFormatter.FormatRecentTurnDigests(profile.RecentTurnDigests));
         sb.AppendLine();
-        sb.AppendLine(CollaborationContextFormatter.FormatSemanticActions(request.Events));
+        sb.AppendLine(CollaborationContextFormatter.FormatSemanticActions(request.Interactions));
         sb.AppendLine();
-        sb.AppendLine(CollaborationContextFormatter.FormatActionTiming(request.Events));
+        sb.AppendLine(CollaborationContextFormatter.FormatActionTiming(request.Interactions));
         sb.AppendLine();
         sb.AppendLine("Return JSON with:");
         sb.AppendLine(
@@ -163,12 +163,12 @@ public sealed class StubCollaborationAdvisor(
         return sb.ToString().TrimEnd();
     }
 
-    public static IReadOnlyList<CollaborationSuggestionDto> BuildStubSuggestions(
-        CollaborationAdviseRequest request,
-        CollaborationTendencyBundleDto profile)
+    public static IReadOnlyList<SuggestionDto> BuildStubSuggestions(
+        AdviseRequest request,
+        BeliefProfileDto profile)
     {
-        var selected = request.Events
-            .Where(e => e.Type == "control.select")
+        var selected = request.Interactions
+            .Where(e => e.Action == "control.select")
             .OrderByDescending(e => e.At)
             .FirstOrDefault();
 
@@ -176,7 +176,7 @@ public sealed class StubCollaborationAdvisor(
         {
             return
             [
-                new CollaborationSuggestionDto(
+                new SuggestionDto(
                     "select-contract",
                     "select",
                     $"Select {selected.Label ?? selected.ControlId} to continue staffing",
@@ -185,12 +185,11 @@ public sealed class StubCollaborationAdvisor(
             ];
         }
 
-        var profileText = (profile.UserOverride ?? profile.AppDefaults ?? string.Empty)
-            .ToLowerInvariant();
+        var profileText = ProfileEvidenceText(profile);
         var prefersGraph =
             profileText.Contains("graph", StringComparison.Ordinal)
-            || request.Events.Any(e =>
-                e.Type == "view.change"
+            || request.Interactions.Any(e =>
+                e.Action == "view.change"
                 && string.Equals(
                     e.Meta?.GetValueOrDefault("to"),
                     "graph",
@@ -198,20 +197,20 @@ public sealed class StubCollaborationAdvisor(
         var prefersValues =
             profileText.Contains("numeric", StringComparison.Ordinal)
             || profileText.Contains("values", StringComparison.Ordinal)
-            || request.Events.Any(e =>
-                e.Type == "view.change"
+            || request.Interactions.Any(e =>
+                e.Action == "view.change"
                 && string.Equals(
                     e.Meta?.GetValueOrDefault("to"),
                     "values",
                     StringComparison.OrdinalIgnoreCase));
 
-        var currentDisplay = request.Screen.ViewState.SignalsDisplay;
+        var currentDisplay = request.Surface.ViewState.SignalsDisplay;
         if (prefersGraph
             && !string.Equals(currentDisplay, "graph", StringComparison.OrdinalIgnoreCase))
         {
             return
             [
-                new CollaborationSuggestionDto(
+                new SuggestionDto(
                     "set-signals-graph",
                     "set-view",
                     "Switch signals to relative graph view (inferred preference)",
@@ -226,7 +225,7 @@ public sealed class StubCollaborationAdvisor(
         {
             return
             [
-                new CollaborationSuggestionDto(
+                new SuggestionDto(
                     "set-signals-values",
                     "set-view",
                     "Switch signals to numeric values view (inferred preference)",
@@ -241,7 +240,7 @@ public sealed class StubCollaborationAdvisor(
         if (prefersExpandAll && collapsed.Count > 0)
         {
             return collapsed
-                .Select((control, index) => new CollaborationSuggestionDto(
+                .Select((control, index) => new SuggestionDto(
                     $"expand-all-{index}",
                     "expand",
                     $"Show extended detail for {control.Label} (expand-all preference)",
@@ -252,15 +251,15 @@ public sealed class StubCollaborationAdvisor(
 
         var prefersExtended =
             profileText.Contains("extended", StringComparison.Ordinal)
-            || request.Events.Count(e => e.Type == "control.expand")
-                >= request.Events.Count(e => e.Type == "control.collapse");
+            || request.Interactions.Count(e => e.Action == "control.expand")
+                >= request.Interactions.Count(e => e.Action == "control.collapse");
 
         var firstCollapsed = collapsed.FirstOrDefault();
         if (prefersExtended && firstCollapsed is not null)
         {
             return
             [
-                new CollaborationSuggestionDto(
+                new SuggestionDto(
                     "expand-next",
                     "expand",
                     $"Show extended detail for {firstCollapsed.Label}",
@@ -279,7 +278,7 @@ public sealed class StubCollaborationAdvisor(
         {
             return
             [
-                new CollaborationSuggestionDto(
+                new SuggestionDto(
                     "expand-first",
                     "expand",
                     $"Show extended detail for {first.Label}",
@@ -290,7 +289,7 @@ public sealed class StubCollaborationAdvisor(
 
         return
         [
-            new CollaborationSuggestionDto(
+            new SuggestionDto(
                 "select-first",
                 "select",
                 $"Select {first.Label} to continue staffing",
@@ -299,12 +298,11 @@ public sealed class StubCollaborationAdvisor(
         ];
     }
 
-    public static CollaborationPreferredLayoutDto BuildPreferredLayout(
-        CollaborationAdviseRequest request,
-        CollaborationTendencyBundleDto profile)
+    public static PreferredLayoutDto BuildPreferredLayout(
+        AdviseRequest request,
+        BeliefProfileDto profile)
     {
-        var profileText = (profile.UserOverride ?? profile.AppDefaults ?? string.Empty)
-            .ToLowerInvariant();
+        var profileText = ProfileEvidenceText(profile);
         var summaryFirst = PrefersSummaryFirstFromProfile(profileText);
         var expandTop = InferExpandTopFromProfile(profileText);
         // Expand-all cues win when both appear (profile being rewritten); summary-first alone collapses.
@@ -334,12 +332,12 @@ public sealed class StubCollaborationAdvisor(
         {
             rationale =
                 $"Stub fallback: expand top {top.Count} by {top.Signal} for "
-                + $"{request.App.ContractCount} visible contract(s).";
+                + $"{request.App.ItemCount} visible contract(s).";
         }
         else if (expandAll)
         {
             rationale =
-                $"Stub fallback: expand-all-before-select inferred for {request.App.ContractCount} contract(s).";
+                $"Stub fallback: expand-all-before-select inferred for {request.App.ItemCount} contract(s).";
         }
         else if (summaryFirst)
         {
@@ -350,7 +348,7 @@ public sealed class StubCollaborationAdvisor(
             rationale = "Stub fallback: no clear expand-all habit; leave cards collapsed.";
         }
 
-        return new CollaborationPreferredLayoutDto(
+        return new PreferredLayoutDto(
             expandAll,
             signalsDisplay,
             rationale,
@@ -457,11 +455,11 @@ public sealed class StubCollaborationAdvisor(
         return null;
     }
 
-    public static string HumanizeEvent(CollaborationInteractionEventDto evt)
+    public static string HumanizeEvent(InteractionDto evt)
     {
         var target = evt.Label ?? evt.ControlId ?? "unknown";
         var meta = evt.Meta;
-        return evt.Type switch
+        return evt.Action switch
         {
             "screen.enter" => "Entered screen",
             "screen.leave" => "Left screen",
@@ -483,7 +481,7 @@ public sealed class StubCollaborationAdvisor(
                 $"Activated signal {meta?.GetValueOrDefault("signalId") ?? evt.Label ?? "signal"}"
                 + $" on {evt.ControlId ?? "control"}"
                 + DescribeDisplaySuffix(meta),
-            _ => $"{evt.Type}: {target}",
+            _ => $"{evt.Action}: {target}",
         };
     }
 
@@ -532,4 +530,18 @@ public sealed class StubCollaborationAdvisor(
             && (profileText.Contains("before deciding", StringComparison.Ordinal)
                 || profileText.Contains("before choosing", StringComparison.Ordinal)
                 || profileText.Contains("before selecting", StringComparison.Ordinal)));
+
+    /// <summary>
+    /// Evidence text the stub matches preference phrases against: the belief statements plus
+    /// the changelog (where the stub updater records cues) — NOT the "what would change my
+    /// mind" prose, which mentions counterfactual displays.
+    /// </summary>
+    public static string ProfileEvidenceText(BeliefProfileDto profile)
+    {
+        var document = profile.Document ?? string.Empty;
+        var validation = BeliefDocumentFormat.Validate(document);
+        var statements = string.Join("\n", validation.Beliefs.Select(b => b.Statement));
+        return (statements + "\n" + BeliefDocumentFormat.ChangelogRegion(document))
+            .ToLowerInvariant();
+    }
 }

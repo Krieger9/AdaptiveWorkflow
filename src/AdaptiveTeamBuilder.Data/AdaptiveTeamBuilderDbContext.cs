@@ -12,11 +12,15 @@ public class AdaptiveTeamBuilderDbContext : DbContext
 
     public DbSet<User> Users => Set<User>();
 
-    public DbSet<UserCollaborationState> UserCollaborationStates => Set<UserCollaborationState>();
+    public DbSet<Interaction> Interactions => Set<Interaction>();
 
-    public DbSet<CollaborationTurnDigest> CollaborationTurnDigests => Set<CollaborationTurnDigest>();
+    public DbSet<BeliefDocument> BeliefDocuments => Set<BeliefDocument>();
 
-    public DbSet<CollaborationStateChangeLog> CollaborationStateChangeLogs => Set<CollaborationStateChangeLog>();
+    public DbSet<Belief> Beliefs => Set<Belief>();
+
+    public DbSet<TurnDigest> TurnDigests => Set<TurnDigest>();
+
+    public DbSet<Revision> Revisions => Set<Revision>();
 
     public DbSet<PositionType> PositionTypes => Set<PositionType>();
 
@@ -92,45 +96,88 @@ public class AdaptiveTeamBuilderDbContext : DbContext
             .IsUnique()
             .HasDatabaseName("UQ_Users_UserName");
 
-        var collab = modelBuilder.Entity<UserCollaborationState>();
-        collab.ToTable("UserCollaborationStates");
-        collab.HasKey(c => c.UserId);
-        collab.Property(c => c.TendencySource).IsRequired().HasMaxLength(32);
-        collab.Property(c => c.UpdatedAt).IsRequired();
-        collab.HasOne(c => c.User)
-            .WithOne()
-            .HasForeignKey<UserCollaborationState>(c => c.UserId)
+        var interaction = modelBuilder.Entity<Interaction>();
+        interaction.ToTable("Interactions");
+        interaction.HasKey(i => i.Id);
+        interaction.Property(i => i.Id).ValueGeneratedOnAdd();
+        interaction.Property(i => i.SessionId).IsRequired().HasMaxLength(64);
+        interaction.Property(i => i.ClientInteractionId).IsRequired().HasMaxLength(64);
+        interaction.Property(i => i.SurfacePath).IsRequired().HasMaxLength(512);
+        interaction.Property(i => i.ControlId).HasMaxLength(128);
+        interaction.Property(i => i.Action).IsRequired().HasMaxLength(64);
+        interaction.Property(i => i.ValueBefore).HasMaxLength(256);
+        interaction.Property(i => i.ValueAfter).HasMaxLength(256);
+        interaction.Property(i => i.Causation).IsRequired().HasMaxLength(32);
+        interaction.Property(i => i.At).IsRequired();
+        interaction.HasIndex(i => new { i.UserId, i.SessionId, i.Seq })
+            .HasDatabaseName("IX_Interactions_UserId_SessionId_Seq");
+        interaction.HasOne(i => i.User)
+            .WithMany()
+            .HasForeignKey(i => i.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        var turnDigest = modelBuilder.Entity<CollaborationTurnDigest>();
-        turnDigest.ToTable("CollaborationTurnDigests");
+        var beliefDocument = modelBuilder.Entity<BeliefDocument>();
+        beliefDocument.ToTable("BeliefDocuments");
+        beliefDocument.HasKey(d => new { d.UserId, d.Tier });
+        beliefDocument.Property(d => d.Tier).IsRequired().HasMaxLength(32);
+        beliefDocument.Property(d => d.Document).IsRequired();
+        beliefDocument.Property(d => d.Source).IsRequired().HasMaxLength(32);
+        beliefDocument.Property(d => d.Version).IsRequired();
+        beliefDocument.Property(d => d.UpdatedAt).IsRequired();
+        beliefDocument.HasOne(d => d.User)
+            .WithMany()
+            .HasForeignKey(d => d.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        var belief = modelBuilder.Entity<Belief>();
+        belief.ToTable("Beliefs");
+        belief.HasKey(b => b.Id);
+        belief.Property(b => b.Id).ValueGeneratedOnAdd();
+        belief.Property(b => b.SurfacePath).IsRequired().HasMaxLength(512);
+        belief.Property(b => b.Dimension).IsRequired().HasMaxLength(128);
+        belief.Property(b => b.Statement).IsRequired();
+        belief.Property(b => b.Conviction).IsRequired().HasMaxLength(32);
+        belief.Property(b => b.UpdatedAt).IsRequired();
+        belief.HasIndex(b => new { b.UserId, b.SurfacePath, b.Dimension })
+            .IsUnique()
+            .HasDatabaseName("UQ_Beliefs_UserId_SurfacePath_Dimension");
+        belief.HasOne(b => b.User)
+            .WithMany()
+            .HasForeignKey(b => b.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        var turnDigest = modelBuilder.Entity<TurnDigest>();
+        turnDigest.ToTable("TurnDigests");
         turnDigest.HasKey(d => d.Id);
         turnDigest.Property(d => d.Id).ValueGeneratedOnAdd();
+        turnDigest.Property(d => d.SurfacePath).IsRequired().HasMaxLength(512);
         turnDigest.Property(d => d.Sequence).IsRequired();
         turnDigest.Property(d => d.CreatedAt).IsRequired();
         turnDigest.Property(d => d.DigestText).IsRequired();
         turnDigest.HasIndex(d => new { d.UserId, d.Sequence })
-            .HasDatabaseName("IX_CollaborationTurnDigests_UserId_Sequence");
+            .HasDatabaseName("IX_TurnDigests_UserId_Sequence");
         turnDigest.HasOne(d => d.User)
             .WithMany()
             .HasForeignKey(d => d.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        var changeLog = modelBuilder.Entity<CollaborationStateChangeLog>();
-        changeLog.ToTable("CollaborationStateChangeLogs");
-        changeLog.HasKey(l => l.Id);
-        changeLog.Property(l => l.Id).ValueGeneratedOnAdd();
-        changeLog.Property(l => l.Reason).IsRequired();
-        changeLog.Property(l => l.CreatedAt).IsRequired();
-        changeLog.HasIndex(l => new { l.UserId, l.CreatedAt })
-            .HasDatabaseName("IX_CollaborationStateChangeLogs_UserId_CreatedAt");
-        changeLog.HasOne(l => l.User)
+        var revision = modelBuilder.Entity<Revision>();
+        revision.ToTable("Revisions");
+        revision.HasKey(r => r.Id);
+        revision.Property(r => r.Id).ValueGeneratedOnAdd();
+        revision.Property(r => r.SurfacePath).IsRequired().HasMaxLength(512);
+        revision.Property(r => r.Kind).IsRequired().HasMaxLength(32);
+        revision.Property(r => r.Reason).IsRequired();
+        revision.Property(r => r.CreatedAt).IsRequired();
+        revision.HasIndex(r => new { r.UserId, r.CreatedAt })
+            .HasDatabaseName("IX_Revisions_UserId_CreatedAt");
+        revision.HasOne(r => r.User)
             .WithMany()
-            .HasForeignKey(l => l.UserId)
+            .HasForeignKey(r => r.UserId)
             .OnDelete(DeleteBehavior.NoAction);
-        changeLog.HasOne(l => l.TurnDigest)
+        revision.HasOne(r => r.TurnDigest)
             .WithMany()
-            .HasForeignKey(l => l.TurnDigestId)
+            .HasForeignKey(r => r.TurnDigestId)
             .OnDelete(DeleteBehavior.SetNull);
     }
 

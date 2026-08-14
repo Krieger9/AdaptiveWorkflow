@@ -18,18 +18,18 @@ public sealed class AgentCollaborationAdvisor(
         PropertyNameCaseInsensitive = true,
     };
 
-    public async Task<CollaborationAdviseResponse> AdviseAsync(
-        CollaborationAdviseRequest request,
-        CollaborationTendencyBundleDto profile,
+    public async Task<AdviseResponse> AdviseAsync(
+        AdviseRequest request,
+        BeliefProfileDto profile,
         CancellationToken cancellationToken = default)
     {
         var promptPreview = StubCollaborationAdvisor.BuildPromptPreview(request, profile);
         var turnContext = new CollaborationProfileUpdateContext(
-            request.Screen.ScreenId,
-            request.Screen.Title,
-            request.Screen.ViewState,
-            request.Screen.Annotations,
-            request.App.ContractCount,
+            string.Join(" / ", request.Surface.SurfacePath),
+            request.Surface.Title,
+            request.Surface.ViewState,
+            request.Surface.Annotations,
+            request.App.ItemCount,
             request.Controls);
 
         try
@@ -56,7 +56,7 @@ public sealed class AgentCollaborationAdvisor(
                         Prompt = promptPreview,
                         RetrievedProfile = profile,
                         TurnContext = turnContext,
-                        Events = request.Events,
+                        Events = request.Interactions,
                         ResponseText = agentResponse.Text,
                         ResponseObject = new
                         {
@@ -72,7 +72,7 @@ public sealed class AgentCollaborationAdvisor(
             preferredLayout = MergePreferredLayout(
                 preferredLayout,
                 StubCollaborationAdvisor.BuildPreferredLayout(request, profile));
-            var response = new CollaborationAdviseResponse(
+            var response = new AdviseResponse(
                 promptPreview,
                 suggestions,
                 preferredLayout);
@@ -84,7 +84,7 @@ public sealed class AgentCollaborationAdvisor(
                     Prompt = promptPreview,
                     RetrievedProfile = profile,
                     TurnContext = turnContext,
-                    Events = request.Events,
+                    Events = request.Interactions,
                     ResponseText = agentResponse.Text,
                     ResponseObject = new
                     {
@@ -108,7 +108,7 @@ public sealed class AgentCollaborationAdvisor(
                     Prompt = promptPreview,
                     RetrievedProfile = profile,
                     TurnContext = turnContext,
-                    Events = request.Events,
+                    Events = request.Interactions,
                     ResponseObject = new
                     {
                         preferredLayout = stub.PreferredLayout,
@@ -125,9 +125,9 @@ public sealed class AgentCollaborationAdvisor(
     /// Prefer Foundry layout, but fill expandTopCount/expandBySignal from stub when the model
     /// understood keep-top-subset in prose yet omitted the structured fields (expandAll=false only).
     /// </summary>
-    private static CollaborationPreferredLayoutDto MergePreferredLayout(
-        CollaborationPreferredLayoutDto? fromAgent,
-        CollaborationPreferredLayoutDto fromStub)
+    private static PreferredLayoutDto MergePreferredLayout(
+        PreferredLayoutDto? fromAgent,
+        PreferredLayoutDto fromStub)
     {
         if (fromAgent is null)
         {

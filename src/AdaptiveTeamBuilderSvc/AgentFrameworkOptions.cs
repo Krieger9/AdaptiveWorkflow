@@ -25,6 +25,12 @@ public sealed class AgentFrameworkOptions
     /// </summary>
     public string TranscriptDirectory { get; set; } = "logs/collaboration";
 
+    /// <summary>
+    /// Root directory for framework data (glossary, interactions, profiles, runs,
+    /// shadow counters), relative to the content root unless absolute.
+    /// </summary>
+    public string DataDirectory { get; set; } = "data";
+
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(ApiKey)
         && !string.IsNullOrWhiteSpace(OpenAIEndpoint)

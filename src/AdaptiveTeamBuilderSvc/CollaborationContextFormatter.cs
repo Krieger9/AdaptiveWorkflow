@@ -23,33 +23,39 @@ public static class CollaborationContextFormatter
         "signal.activate",
     ];
 
-    public static string ActiveProfileSummary(CollaborationTendencyBundleDto profile) =>
-        string.IsNullOrWhiteSpace(profile.UserOverride)
-            ? profile.AppDefaults
-            : profile.UserOverride!;
+    /// <summary>Compact one-line summary of the current beliefs for digest lines.</summary>
+    public static string ActiveProfileSummary(BeliefProfileDto profile)
+    {
+        var validation = BeliefDocumentFormat.Validate(profile.Document);
+        var parts = validation.Beliefs
+            .Where(b => !b.Statement.StartsWith("No ", StringComparison.OrdinalIgnoreCase))
+            .Select(b => $"{b.Dimension}={Truncate(b.Statement, 80)} ({b.Conviction})")
+            .ToList();
+        return parts.Count == 0
+            ? $"profile v{profile.Version} ({profile.Source}); no beliefs beyond app defaults yet"
+            : $"profile v{profile.Version} ({profile.Source}); " + string.Join("; ", parts);
+    }
 
-    public static string FormatRetrievedProfile(CollaborationTendencyBundleDto profile)
+    public static string FormatRetrievedProfile(BeliefProfileDto profile)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("Retrieved user collaboration profile (from store):");
+        sb.AppendLine("Your current profile document (read it, then return the complete updated document):");
+        sb.AppendLine($"  tier: {profile.Tier}");
+        sb.AppendLine($"  version: {profile.Version}");
         sb.AppendLine($"  source: {profile.Source}");
         sb.AppendLine(
             "  updatedAt: "
-            + (profile.UpdatedAt is { } at ? at.ToString("O") : "(never)"));
-        sb.AppendLine("  appDefaults:");
-        sb.AppendLine(Indent(profile.AppDefaults.Trim()));
-        sb.AppendLine("  userOverride:");
-        sb.AppendLine(
-            string.IsNullOrWhiteSpace(profile.UserOverride)
-                ? "    (none — using appDefaults)"
-                : Indent(profile.UserOverride.Trim()));
-        sb.AppendLine("  activeSummary (what the agent should treat as current tendencies):");
-        sb.AppendLine(Indent(ActiveProfileSummary(profile).Trim()));
+            + (profile.UpdatedAt is { } at ? at.ToString("O") : "(never — seeded default)"));
+        sb.AppendLine("  document:");
+        sb.AppendLine(Indent(profile.Document.Trim()));
         return sb.ToString().TrimEnd();
     }
 
+    private static string Truncate(string value, int max) =>
+        value.Length <= max ? value : value[..max].TrimEnd() + "…";
+
     public static string FormatViewState(
-        CollaborationViewStateDto viewState,
+        ViewStateDto viewState,
         int? visibleControlCount = null)
     {
         var expandedCount = viewState.ExpandedControlIds.Count;
@@ -74,14 +80,14 @@ public static class CollaborationContextFormatter
     }
 
     public static string FormatComparisonPattern(
-        CollaborationViewStateDto? viewState,
+        ViewStateDto? viewState,
         int? visibleControlCount,
-        IReadOnlyList<CollaborationInteractionEventDto> events)
+        IReadOnlyList<InteractionDto> events)
     {
         var expandedCount = viewState?.ExpandedControlIds.Count ?? 0;
-        var expandEvents = events.Count(e => e.Type == "control.expand");
-        var collapseEvents = events.Count(e => e.Type == "control.collapse");
-        var selected = events.Any(e => e.Type == "control.select");
+        var expandEvents = events.Count(e => e.Action == "control.expand");
+        var collapseEvents = events.Count(e => e.Action == "control.collapse");
+        var selected = events.Any(e => e.Action == "control.select");
         var visible = visibleControlCount ?? 0;
 
         var sb = new StringBuilder();
@@ -155,10 +161,10 @@ public static class CollaborationContextFormatter
         return sb.ToString().TrimEnd();
     }
 
-    public static string FormatActionTiming(IReadOnlyList<CollaborationInteractionEventDto> events)
+    public static string FormatActionTiming(IReadOnlyList<InteractionDto> events)
     {
         var changes = events
-            .Where(e => ChangeActionTypes.Contains(e.Type))
+            .Where(e => ChangeActionTypes.Contains(e.Action))
             .OrderBy(e => e.At)
             .ToList();
 
@@ -177,7 +183,7 @@ public static class CollaborationContextFormatter
             var gapMs = ResolveGapMs(evt, i == 0 ? null : changes[i - 1]);
             var gapText = gapMs is long ms ? $"{ms}ms since previous change" : "first change in batch";
             sb.AppendLine(
-                $"  {i + 1}) {evt.Type} on {evt.ControlId ?? evt.Label ?? "?"} — {gapText}");
+                $"  {i + 1}) {evt.Action} on {evt.ControlId ?? evt.Label ?? "?"} — {gapText}");
         }
 
         for (var i = 1; i < changes.Count; i++)
@@ -190,8 +196,8 @@ public static class CollaborationContextFormatter
                 continue;
             }
 
-            if (prev.Type == "control.expand"
-                && curr.Type == "control.collapse"
+            if (prev.Action == "control.expand"
+                && curr.Action == "control.collapse"
                 && SameControl(prev, curr)
                 && gap <= LikelyMistakeMs)
             {
@@ -199,11 +205,11 @@ public static class CollaborationContextFormatter
                     $"  flag: likely-mistake — expand→collapse on {curr.ControlId} within {gap}ms "
                     + "(<={LikelyMistakeMs}ms); down-weight as accidental toggle.");
             }
-            else if (prev.Type == "control.expand" && gap >= DeliberateDwellMs)
+            else if (prev.Action == "control.expand" && gap >= DeliberateDwellMs)
             {
                 sb.AppendLine(
                     $"  flag: deliberate-dwell — expand on {prev.ControlId} held ~{gap}ms before "
-                    + $"{curr.Type}; treat as intentional review.");
+                    + $"{curr.Action}; treat as intentional review.");
             }
         }
 
@@ -215,9 +221,9 @@ public static class CollaborationContextFormatter
     /// collapsed cards sit — evidence for preferred commercial signal (e.g. Margin vs Profit).
     /// </summary>
     public static string FormatSignalRankComparison(
-        IReadOnlyList<CollaborationControlSnapshotDto>? controls,
-        CollaborationViewStateDto? viewState,
-        IReadOnlyList<CollaborationInteractionEventDto>? events = null)
+        IReadOnlyList<ControlSnapshotDto>? controls,
+        ViewStateDto? viewState,
+        IReadOnlyList<InteractionDto>? events = null)
     {
         var sb = new StringBuilder();
         sb.AppendLine(
@@ -240,13 +246,13 @@ public static class CollaborationContextFormatter
 
         var selectedIds = new HashSet<string>(
             eventList
-                .Where(e => e.Type == "control.select" && !string.IsNullOrWhiteSpace(e.ControlId))
+                .Where(e => e.Action == "control.select" && !string.IsNullOrWhiteSpace(e.ControlId))
                 .Select(e => e.ControlId!),
             StringComparer.OrdinalIgnoreCase);
 
         var collapsedIds = new HashSet<string>(
             eventList
-                .Where(e => e.Type == "control.collapse" && !string.IsNullOrWhiteSpace(e.ControlId))
+                .Where(e => e.Action == "control.collapse" && !string.IsNullOrWhiteSpace(e.ControlId))
                 .Select(e => e.ControlId!),
             StringComparer.OrdinalIgnoreCase);
 
@@ -408,8 +414,8 @@ public static class CollaborationContextFormatter
     }
 
     public static string FormatSemanticActions(
-        IReadOnlyList<CollaborationInteractionEventDto> events,
-        string heading = "Recent semantic actions (what the user did this turn):")
+        IReadOnlyList<InteractionDto> events,
+        string heading = "Recent interactions (what happened this turn):")
     {
         var sb = new StringBuilder();
         sb.AppendLine(heading);
@@ -422,7 +428,30 @@ public static class CollaborationContextFormatter
         var index = 1;
         foreach (var evt in events.OrderBy(e => e.At))
         {
-            sb.AppendLine($"{index}) [{evt.At:O}] {StubCollaborationAdvisor.HumanizeEvent(evt)}");
+            var causation = string.IsNullOrWhiteSpace(evt.Causation) ? "user" : evt.Causation;
+            var reversal = evt.Reversal == true
+                ? " [REVERSAL — the user undid a state the system produced; strongest signal]"
+                : string.Empty;
+            sb.AppendLine(
+                $"{index}) [{evt.At:O}] [causation={causation}]{reversal} "
+                + StubCollaborationAdvisor.HumanizeEvent(evt));
+            if (evt.ChoiceSet is { Count: > 1 })
+            {
+                var chosen = evt.Entity?.Id ?? evt.ControlId;
+                sb.AppendLine(
+                    "      choiceSet (alternatives visible at that moment; pay attention to what was NOT chosen):");
+                foreach (var item in evt.ChoiceSet)
+                {
+                    var marker = string.Equals(item.Id, chosen, StringComparison.OrdinalIgnoreCase)
+                        ? " <-- acted on"
+                        : string.Empty;
+                    sb.AppendLine(
+                        $"        - {item.Id}: "
+                        + string.Join(", ", item.Attrs.Select(a => $"{a.Key}={a.Value}"))
+                        + marker);
+                }
+            }
+
             if (evt.Meta is { Count: > 0 })
             {
                 foreach (var pair in evt.Meta)
@@ -437,18 +466,78 @@ public static class CollaborationContextFormatter
         return sb.ToString().TrimEnd();
     }
 
+    /// <summary>Window within which a user act that undoes an agent-applied state counts as a reversal.</summary>
+    public const int ReversalWindowMs = 10 * 60 * 1000;
+
+    /// <summary>
+    /// Flags user interactions that undo a recent agent-applied state (`reversal: true`).
+    /// A user interaction that reverses a recent agent-applied change is the single most
+    /// informative event in the stream.
+    /// </summary>
+    public static IReadOnlyList<InteractionDto> FlagReversals(
+        IReadOnlyList<InteractionDto> events)
+    {
+        if (events.Count == 0)
+        {
+            return events;
+        }
+
+        var ordered = events.OrderBy(e => e.At).ToList();
+        var result = new List<InteractionDto>(ordered.Count);
+        // Recent agent-applied states: (action, controlId-or-axis, at).
+        var agentApplied = new List<(string Action, string? Target, DateTime At)>();
+
+        foreach (var evt in ordered)
+        {
+            if (string.Equals(evt.Causation, "agent-applied", StringComparison.OrdinalIgnoreCase))
+            {
+                agentApplied.Add((evt.Action, TargetOf(evt), evt.At));
+                result.Add(evt);
+                continue;
+            }
+
+            var isReversal = false;
+            if (string.Equals(evt.Causation, "user", StringComparison.OrdinalIgnoreCase)
+                && evt.Reversal != true)
+            {
+                var undoes = OppositeAction(evt.Action);
+                isReversal = agentApplied.Any(applied =>
+                    (evt.At - applied.At).TotalMilliseconds is >= 0 and <= ReversalWindowMs
+                    && string.Equals(applied.Target, TargetOf(evt), StringComparison.OrdinalIgnoreCase)
+                    && (string.Equals(applied.Action, undoes, StringComparison.OrdinalIgnoreCase)
+                        || (evt.Action == "view.change" && applied.Action == "view.change")));
+            }
+
+            result.Add(isReversal ? evt with { Reversal = true } : evt);
+        }
+
+        return result;
+
+        static string? TargetOf(InteractionDto evt) =>
+            evt.Action == "view.change"
+                ? evt.Meta?.GetValueOrDefault("preferenceAxis") ?? evt.Label
+                : evt.ControlId;
+
+        static string OppositeAction(string action) => action switch
+        {
+            "control.collapse" => "control.expand",
+            "control.expand" => "control.collapse",
+            _ => action,
+        };
+    }
+
     /// <summary>
     /// Compact one-line digest of a decision turn for rolling recent-observation memory.
     /// </summary>
     public static string? FormatDecisionTurnDigest(
-        IReadOnlyList<CollaborationControlSnapshotDto>? controls,
-        CollaborationViewStateDto? viewState,
-        IReadOnlyList<CollaborationInteractionEventDto> events,
+        IReadOnlyList<ControlSnapshotDto>? controls,
+        ViewStateDto? viewState,
+        IReadOnlyList<InteractionDto> events,
         string? activeSummary = null,
-        string? screenId = null)
+        string? surfacePath = null)
     {
         var isDecision = events.Any(e =>
-            e.Type is "control.select" or "view.change");
+            e.Action is "control.select" or "view.change");
         if (!isDecision)
         {
             return null;
@@ -478,7 +567,7 @@ public static class CollaborationContextFormatter
                 }
 
                 var selectedIds = events
-                    .Where(e => e.Type == "control.select" && !string.IsNullOrWhiteSpace(e.ControlId))
+                    .Where(e => e.Action == "control.select" && !string.IsNullOrWhiteSpace(e.ControlId))
                     .Select(e => e.ControlId!)
                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
                 var expandedIds = new HashSet<string>(
@@ -504,7 +593,7 @@ public static class CollaborationContextFormatter
         var contradiction = DetectContradictionFlags(activeSummary, pattern, rankBits, signalsDisplay);
 
         return
-            $"{DateTime.UtcNow:yyyy-MM-ddTHH:mmZ} {(screenId ?? "select-contract")}: "
+            $"{DateTime.UtcNow:yyyy-MM-ddTHH:mmZ} {(surfacePath ?? BeliefDocumentFormat.ContractsListScope)}: "
             + $"pattern={pattern}; expanded={expandedCount}/{visible}"
             + (signalsDisplay is null ? string.Empty : $"; display={signalsDisplay}")
             + (rankBits.Count > 0 ? "; " + string.Join("; ", rankBits) : string.Empty)
@@ -567,14 +656,14 @@ public static class CollaborationContextFormatter
     }
 
     private static string InferPatternLabel(
-        CollaborationViewStateDto? viewState,
+        ViewStateDto? viewState,
         int visible,
-        IReadOnlyList<CollaborationInteractionEventDto> events)
+        IReadOnlyList<InteractionDto> events)
     {
         var expandedCount = viewState?.ExpandedControlIds.Count ?? 0;
-        var expandEvents = events.Count(e => e.Type == "control.expand");
-        var collapseEvents = events.Count(e => e.Type == "control.collapse");
-        var selected = events.Any(e => e.Type == "control.select");
+        var expandEvents = events.Count(e => e.Action == "control.expand");
+        var collapseEvents = events.Count(e => e.Action == "control.collapse");
+        var selected = events.Any(e => e.Action == "control.select");
 
         if (visible >= 3 && expandedCount == visible - 1 && selected)
         {
@@ -717,56 +806,72 @@ public static class CollaborationContextFormatter
     {
         return
             """
+            Reading interactions (causation rules):
+            - Only interactions with causation "user" are evidence of what this person prefers.
+              Interactions marked "agent-applied", "restored", or "system-default" are states the
+              system produced. If the user did not change something the system did, that is NOT
+              agreement — it may be inattention. Never treat inaction on a system-produced state
+              as confirmation.
+            - An interaction flagged REVERSAL means the user undid something the system did.
+              These are your strongest signals. Give them the most consideration and say so.
+            - When an interaction includes a choiceSet, pay attention to what was NOT chosen.
+              A rule that explains the choices but does not exclude the non-choices is not yet
+              a rule. If two attributes correlate in the available data (e.g. margin and contract
+              value), say plainly that you cannot separate them.
+
             Expectation for this agent turn:
-            - Read the retrieved activeSummary as the user's current tendencies.
+            - Read the profile document's belief sections as the user's current tendencies.
             - Also read Recent decision-turn digests (last ~5). Treat them as stronger evidence for
-              habit shifts than a single sticky sentence in activeSummary.
-            - Interpret semantic actions AND expandedCoverage as evidence of preferred view styles
-              (signalsDisplay: values vs graph; detailLevel: summary vs extended;
-              compareStyle: expand-one vs expand-all-before-select vs keep-top-two-then-select).
-            - Also interpret commercial signal rank cues, especially keep-top-2 / collapse-lowest /
-              expand-one+select-high patterns and collapsed-card cross-ranks. Auto-applied expand-all
-              may yield expandsThisTurn=0; treat final expanded set plus collapse events as primary.
+              habit shifts than a single sticky sentence in a belief statement.
+            - Interpret interactions AND expandedCoverage as evidence of preferred view styles
+              (information-form / signalsDisplay: values vs graph; disclosure-default / detailLevel:
+              summary vs extended; selection-rule / compareStyle: expand-one vs
+              expand-all-before-select vs keep-top-two-then-select).
+            - Also interpret commercial signal rank cues (metric-attention), especially keep-top-2 /
+              collapse-lowest / expand-one+select-high patterns and collapsed-card cross-ranks.
+              Auto-applied expand-all may yield expandsThisTurn=0; treat final expanded set plus
+              collapse events as primary.
             - Habit shift / rollback (critical):
               * Shifts are bidirectional. expand-one ↔ keep-top-two and Margin ↔ Profit can each
-                reverse when recent digests disagree with activeSummary.
-              * If this turn CONTRADICTS activeSummary (e.g. profile says expand-one by Profit but
+                reverse when recent digests disagree with the held belief.
+              * If this turn CONTRADICTS a held belief (e.g. the belief says expand-one by Profit but
                 turn/digests show keep-top-two with Profit #1+#2 expanded), do NOT re-assert expand-one.
-              * Mark the old habit as under review after one contradiction; after ≥2 agreeing
-                recent digests on the new pattern/signal, COMMIT the new habit and remove the old
-                durable commercial-signal / compareStyle claim from TendencyProse.
+              * Record the challenge after one contradiction; after ≥2 agreeing recent digests on
+                the new pattern/signal, revise the belief and remove the old durable
+                commercial-signal / selection-rule claim.
               * expanded=2/3 with keep-top-2 rank cues IS keep-top-two even with zero collapse events
                 (the third card may never have been opened).
               * signalsDisplay shifts the same way: recent digests carry a display=graph|values
-                token. If ≥2 recent digests contradict the stored signalsDisplay (e.g. profile says
-                numeric/values but digests show display=graph, or the reverse), COMMIT the switch,
-                rewrite the durable signalsDisplay preference, and set preferredLayout.signalsDisplay.
+                token. If ≥2 recent digests contradict the stored signalsDisplay (e.g. the belief says
+                numeric/values but digests show display=graph, or the reverse), revise the
+                information-form belief and set preferredLayout.signalsDisplay.
                 Do not re-assert the old display preference out of loyalty to prior prose.
-              * Preserve only preferences that this turn and recent digests still support.
+              * Preserve only beliefs that this turn and recent digests still support.
             - Preferred commercial signal commitment:
-              * Confirming turns on the SAME signal may commit (keep-top-2, collapse-lowest, or
-                expand-one+select-high on that signal).
-              * Confirming a NEW signal that contradicts the profile requires digest agreement
+              * Confirming turns on the SAME signal may raise conviction (keep-top-2, collapse-lowest,
+                or expand-one+select-high on that signal).
+              * Confirming a NEW signal that contradicts a held belief requires digest agreement
                 (≥2 recent turns), not loyalty to the old prose.
-            - Always return preferredLayout by interpreting the UPDATED tendencies (especially on
+            - Always return preferredLayout by interpreting the UPDATED beliefs (especially on
               cold start): expandAll true only for true expand-all; keep-top-two by signal →
               expandAll=false, expandTopCount=2, expandBySignal=...; expand-one by signal →
               expandAll=false, expandTopCount=1, expandBySignal=...; summary-first → expandAll=false
               with null expandTopCount. Set signalsDisplay when clear.
             - preferredLayout is what the client auto-applies on load; suggestions remain interactive
               adaptations (set-view / expand / collapse / select) for the current turn.
-            - Use action timing to down-weight accidental toggles (likely-mistake) and trust
+            - Use action timing to discount accidental toggles (likely-mistake) and trust
               deliberate-dwell / slow gaps more.
-            - Keep TendencyProse concise; rewrite noisy stub append logs into clean preferences.
+            - Be willing to say you do not know. "I have two hypotheses and cannot separate them"
+              is a more useful belief entry than a confident guess.
             - Do not invent control IDs; use only ids present in the control snapshots.
             """.Trim();
     }
 
-    private static List<(CollaborationControlSnapshotDto Control, int Rank, string Raw)> RankControlsBySignal(
-        IReadOnlyList<CollaborationControlSnapshotDto> controls,
+    private static List<(ControlSnapshotDto Control, int Rank, string Raw)> RankControlsBySignal(
+        IReadOnlyList<ControlSnapshotDto> controls,
         string signalKey)
     {
-        var scored = new List<(CollaborationControlSnapshotDto Control, decimal Value, string Raw)>();
+        var ranked = new List<(ControlSnapshotDto Control, decimal Value, string Raw)>();
         foreach (var control in controls)
         {
             if (control.Data is null
@@ -776,10 +881,10 @@ public static class CollaborationContextFormatter
                 continue;
             }
 
-            scored.Add((control, value, raw));
+            ranked.Add((control, value, raw));
         }
 
-        return scored
+        return ranked
             .OrderByDescending(s => s.Value)
             .Select((s, index) => (s.Control, Rank: index + 1, s.Raw))
             .ToList();
@@ -800,7 +905,7 @@ public static class CollaborationContextFormatter
             out value);
     }
 
-    private static string ShortLabel(CollaborationControlSnapshotDto control)
+    private static string ShortLabel(ControlSnapshotDto control)
     {
         if (control.Data is not null
             && control.Data.TryGetValue("code", out var code)
@@ -817,8 +922,8 @@ public static class CollaborationContextFormatter
         string.IsNullOrWhiteSpace(raw) ? "?" : raw.Trim();
 
     private static long? ResolveGapMs(
-        CollaborationInteractionEventDto current,
-        CollaborationInteractionEventDto? previous)
+        InteractionDto current,
+        InteractionDto? previous)
     {
         if (current.Meta is not null
             && current.Meta.TryGetValue("sincePreviousMs", out var raw)
@@ -836,8 +941,8 @@ public static class CollaborationContextFormatter
     }
 
     private static bool SameControl(
-        CollaborationInteractionEventDto a,
-        CollaborationInteractionEventDto b) =>
+        InteractionDto a,
+        InteractionDto b) =>
         !string.IsNullOrWhiteSpace(a.ControlId)
         && string.Equals(a.ControlId, b.ControlId, StringComparison.Ordinal);
 

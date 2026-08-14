@@ -5,29 +5,34 @@ namespace AdaptiveTeamBuilderSvc;
 public interface ICollaborationProfileUpdater
 {
     Task<CollaborationProfileUpdateResult> UpdateFromObservationsAsync(
-        CollaborationTendencyBundleDto current,
-        IReadOnlyList<CollaborationInteractionEventDto> events,
+        BeliefProfileDto current,
+        IReadOnlyList<InteractionDto> events,
         CollaborationProfileUpdateContext? context = null,
         CancellationToken cancellationToken = default);
 }
 
 /// <summary>
-/// Outcome of a profile update: the applied profile plus an optional natural-language reason
-/// the AI gave for changing it (null when nothing meaningful changed).
+/// Outcome of a profile update: the applied belief document, an optional natural-language
+/// change reason (null when nothing meaningful changed), how validation went
+/// (ok | retried | rejected), and the raw request/response for the run record.
 /// </summary>
 public sealed record CollaborationProfileUpdateResult(
-    CollaborationTendencyBundleDto Profile,
-    string? ChangeReason = null);
+    BeliefProfileDto Profile,
+    string? ChangeReason = null,
+    string? ValidationResult = "ok",
+    string? RawRequest = null,
+    string? RawResponse = null);
 
 /// <summary>
 /// Heuristic profile updater used when Foundry is not configured, and as a failure fallback.
+/// Maintains the belief document via parse-modify-write so the demo works without an API key.
 /// </summary>
 public sealed class StubCollaborationProfileUpdater(
     ICollaborationAgentTranscriptLogger transcripts) : ICollaborationProfileUpdater
 {
     public async Task<CollaborationProfileUpdateResult> UpdateFromObservationsAsync(
-        CollaborationTendencyBundleDto current,
-        IReadOnlyList<CollaborationInteractionEventDto> events,
+        BeliefProfileDto current,
+        IReadOnlyList<InteractionDto> events,
         CollaborationProfileUpdateContext? context = null,
         CancellationToken cancellationToken = default)
     {
@@ -47,7 +52,12 @@ public sealed class StubCollaborationProfileUpdater(
                 ResponseObject = new { appliedProfile = updated, changeReason = reason },
             },
             cancellationToken);
-        return new CollaborationProfileUpdateResult(updated, reason);
+        return new CollaborationProfileUpdateResult(
+            updated,
+            reason,
+            ValidationResult: "ok",
+            RawRequest: prompt,
+            RawResponse: updated.Document);
     }
 
     /// <summary>
@@ -55,54 +65,186 @@ public sealed class StubCollaborationProfileUpdater(
     /// signals worth recording (so the caller can skip logging a no-op change).
     /// </summary>
     public static string? SummarizeChangeReason(
-        IReadOnlyList<CollaborationInteractionEventDto> events)
+        IReadOnlyList<InteractionDto> events)
     {
-        var observations = SummarizePreferenceSignals(events);
+        var observations = SummarizePreferenceSignals(UserEvidence(events));
         return string.IsNullOrWhiteSpace(observations)
             ? null
-            : "(Stub updater) Preference cues from latest Select Contract turn: " + observations;
+            : "(Stub updater) Preference cues from latest turn: " + observations;
     }
 
-    public CollaborationTendencyBundleDto UpdateFromObservations(
-        CollaborationTendencyBundleDto current,
-        IReadOnlyList<CollaborationInteractionEventDto> events)
+    /// <summary>
+    /// Parse-modify-write over the belief document: rewrites the dimension statements the
+    /// evidence touches and appends a changelog entry. Only causation=user interactions
+    /// count as evidence.
+    /// </summary>
+    public BeliefProfileDto UpdateFromObservations(
+        BeliefProfileDto current,
+        IReadOnlyList<InteractionDto> events)
     {
-        var observations = SummarizePreferenceSignals(events);
-        var baseProse = string.IsNullOrWhiteSpace(current.UserOverride)
-            ? current.AppDefaults
-            : current.UserOverride!;
-
-        string updated;
+        var evidence = UserEvidence(events);
+        var observations = SummarizePreferenceSignals(evidence);
         if (string.IsNullOrWhiteSpace(observations))
         {
-            updated =
-                baseProse.Trim()
-                + "\n\n(Stub updater) No new preference signals this batch.";
-        }
-        else
-        {
-            updated =
-                baseProse.Trim()
-                + "\n\n(Stub updater) Preference cues from latest Select Contract turn: "
-                + observations;
+            return current with { Source = "stub" };
         }
 
-        return new CollaborationTendencyBundleDto(
-            current.AppDefaults,
-            updated,
-            DateTime.UtcNow,
-            "stub");
+        var scope = BeliefDocumentFormat.ContractsListScope;
+        var date = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        var document = current.Document;
+        var touched = new List<string>();
+
+        var lastSignalsDisplay = LastSignalsDisplay(evidence);
+        var reversed = evidence.Any(e => e.Reversal == true);
+        if (!string.IsNullOrWhiteSpace(lastSignalsDisplay))
+        {
+            var statement = lastSignalsDisplay.Equals("graph", StringComparison.OrdinalIgnoreCase)
+                ? "Prefers relative graph signal display over numeric values."
+                : "Prefers numeric signal values over graphs.";
+            document = SetBelief(
+                document,
+                scope,
+                "information-form",
+                statement,
+                reversed ? "working theory" : "tentative",
+                date,
+                "The user switched the signals display themselves this turn"
+                + (reversed ? ", reversing an agent-applied display" : "") + ".");
+            touched.Add("information-form");
+        }
+
+        var expanded = evidence.Count(e => e.Action == "control.expand");
+        var collapsed = evidence.Count(e => e.Action == "control.collapse");
+        if (expanded != collapsed || expanded > 0)
+        {
+            var statement = expanded > collapsed
+                ? "Leans toward extended card detail before deciding."
+                : collapsed > expanded
+                    ? "Leans toward summary cards, collapsing extra detail."
+                    : "Toggles between summary and extended detail while comparing.";
+            document = SetBelief(
+                document,
+                scope,
+                "disclosure-default",
+                statement,
+                "tentative",
+                date,
+                $"Expand/collapse balance this turn: {expanded} expand(s), {collapsed} collapse(s).");
+            touched.Add("disclosure-default");
+        }
+
+        var signalIds = evidence
+            .Where(e => e.Action is "signal.focus" or "signal.activate")
+            .Select(e => e.Meta?.GetValueOrDefault("signalId") ?? e.Label)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(4)
+            .ToList();
+        if (signalIds.Count > 0)
+        {
+            document = SetBelief(
+                document,
+                scope,
+                "metric-attention",
+                "Inspects these signals first: " + string.Join(", ", signalIds) + ".",
+                "tentative",
+                date,
+                "Signal focus/activate interactions this turn.");
+            touched.Add("metric-attention");
+        }
+
+        var selection = evidence.LastOrDefault(e => e.Action == "control.select");
+        if (selection is not null)
+        {
+            var alternatives = selection.ChoiceSet is { Count: > 1 }
+                ? $" from a visible choice set of {selection.ChoiceSet.Count}"
+                : string.Empty;
+            document = SetBelief(
+                document,
+                scope,
+                "selection-rule",
+                $"Most recently selected {selection.Label ?? selection.ControlId}{alternatives}. "
+                + "No committed rule yet for which contracts are inspected first.",
+                "noticed",
+                date,
+                "A single selection is not yet a rule; watching for a repeated pattern over the choice set.");
+            touched.Add("selection-rule");
+        }
+
+        if (touched.Count == 0)
+        {
+            return current with { Source = "stub" };
+        }
+
+        document = BeliefDocumentFormat.AppendChangelogEntry(
+            document,
+            $"{date} · revised {string.Join(", ", touched)}",
+            "(Stub updater) Preference cues from latest turn: " + observations);
+
+        return current with { Document = document, Source = "stub" };
     }
 
+    private static string SetBelief(
+        string document,
+        string scope,
+        string dimension,
+        string statement,
+        string conviction,
+        string date,
+        string leaningOn)
+    {
+        document = BeliefDocumentFormat.ReplaceBeliefField(document, scope, dimension, "Belief", statement);
+        document = BeliefDocumentFormat.ReplaceBeliefField(document, scope, dimension, "Conviction", conviction);
+        document = BeliefDocumentFormat.ReplaceBeliefField(
+            document,
+            scope,
+            dimension,
+            "Tenure",
+            $"updated {date} by stub observation");
+        return BeliefDocumentFormat.ReplaceBeliefField(
+            document,
+            scope,
+            dimension,
+            "What I'm leaning on",
+            leaningOn);
+    }
+
+    /// <summary>Only causation=user interactions are evidence (§ causation rules).</summary>
+    public static IReadOnlyList<InteractionDto> UserEvidence(
+        IReadOnlyList<InteractionDto> events) =>
+        events
+            .Where(e => string.IsNullOrWhiteSpace(e.Causation)
+                || string.Equals(e.Causation, "user", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+    private static string? LastSignalsDisplay(IReadOnlyList<InteractionDto> evidence) =>
+        evidence
+            .Where(e => e.Action == "view.change"
+                && string.Equals(
+                    e.Meta?.GetValueOrDefault("preferenceAxis"),
+                    "signalsDisplay",
+                    StringComparison.OrdinalIgnoreCase))
+            .OrderBy(e => e.At)
+            .Select(e => e.Meta?.GetValueOrDefault("to"))
+            .LastOrDefault(v => !string.IsNullOrWhiteSpace(v));
+
     public static string BuildUpdatePrompt(
-        CollaborationTendencyBundleDto current,
-        IReadOnlyList<CollaborationInteractionEventDto> events,
+        BeliefProfileDto current,
+        IReadOnlyList<InteractionDto> events,
         CollaborationProfileUpdateContext? context = null)
     {
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine(
-            "You maintain the user's durable collaboration profile for Select Contract.");
-        sb.AppendLine(CollaborationContextFormatter.FormatExpectationGuidance());
+        if (!string.IsNullOrWhiteSpace(context?.PromptOverride))
+        {
+            // Replay-with-modified-prompt: the override replaces the standing guidance block.
+            sb.AppendLine(context.PromptOverride.Trim());
+        }
+        else
+        {
+            sb.AppendLine(
+                "You maintain this user's belief document for the surfaces below.");
+            sb.AppendLine(CollaborationContextFormatter.FormatExpectationGuidance());
+        }
         sb.AppendLine();
         sb.AppendLine(CollaborationContextFormatter.FormatRetrievedProfile(current));
         sb.AppendLine();
@@ -112,16 +254,21 @@ public sealed class StubCollaborationProfileUpdater(
 
         if (context is not null)
         {
-            if (!string.IsNullOrWhiteSpace(context.ScreenId))
+            if (!string.IsNullOrWhiteSpace(context.AssembledContext))
+            {
+                sb.AppendLine("Assembled surface context:");
+                sb.AppendLine(context.AssembledContext.Trim());
+            }
+            else if (!string.IsNullOrWhiteSpace(context.SurfacePath))
             {
                 sb.AppendLine(
-                    $"Screen: {context.ScreenTitle ?? context.ScreenId} ({context.ScreenId})");
+                    $"Surface: {context.SurfaceTitle ?? context.SurfacePath} ({context.SurfacePath})");
             }
 
-            if (context.ScreenAnnotations is { Count: > 0 })
+            if (context.SurfaceAnnotations is { Count: > 0 })
             {
-                sb.AppendLine("Screen annotations:");
-                foreach (var pair in context.ScreenAnnotations)
+                sb.AppendLine("Surface annotations:");
+                foreach (var pair in context.SurfaceAnnotations)
                 {
                     sb.AppendLine($"  {pair.Key}: {pair.Value}");
                 }
@@ -151,26 +298,29 @@ public sealed class StubCollaborationProfileUpdater(
         sb.AppendLine(
             CollaborationContextFormatter.FormatSemanticActions(
                 events,
-                "Recent semantic observations to incorporate into the profile:"));
+                "Interactions to incorporate into the belief document:"));
         sb.AppendLine();
         sb.AppendLine(CollaborationContextFormatter.FormatActionTiming(events));
         sb.AppendLine();
         sb.AppendLine(
-            "Return the full updated TendencyProse (activeSummary replacement). "
-            + "Use recent digests + this turn to detect habit shifts: when digests contradict "
-            + "activeSummary (≥2 agreeing new patterns, or clear CONTRADICTS flags), rewrite away "
-            + "the old commercial-signal / compareStyle claim. "
-            + "If activeSummary already matches this turn, you may strengthen it. "
-            + "Use timing cues to down-weight accidental toggles. "
-            + "Do not preserve contradicted preferences out of loyalty to prior prose. "
-            + "When you actually change the profile, also return a concise changeReason "
-            + "explaining why (e.g. 'User selected graph view 3 turns running; switching to "
-            + "graph display'); leave changeReason null/empty when the profile is unchanged.");
+            "Return the COMPLETE updated belief document (all sections, all fields, plus the "
+            + "changelog with your new entry appended). Every belief section must keep all five "
+            + "fields: Belief, Tenure, Conviction, What I'm leaning on, What would change my mind. "
+            + "Conviction must be one of: noticed, tentative, working theory, settled, entrenched. "
+            + "Append at least one changelog entry stating what happened (revised / challenged / "
+            + "created / retired / proposed) and why. Use recent digests + this turn to detect "
+            + "habit shifts: when digests contradict a held belief (≥2 agreeing new patterns, or "
+            + "clear CONTRADICTS flags), revise the old commercial-signal / selection-rule claim. "
+            + "If a belief already matches this turn, you may raise its conviction one level. "
+            + "Use timing cues to discount accidental toggles. Do not preserve contradicted "
+            + "beliefs out of loyalty to prior prose. Also return a concise changeReason when you "
+            + "actually change a belief (e.g. 'User selected graph view 3 turns running; revising "
+            + "information-form to graph'); leave changeReason null/empty when nothing changed.");
         return sb.ToString().TrimEnd();
     }
 
     public static string SummarizePreferenceSignals(
-        IReadOnlyList<CollaborationInteractionEventDto> events)
+        IReadOnlyList<InteractionDto> events)
     {
         if (events.Count == 0)
         {
@@ -179,33 +329,24 @@ public sealed class StubCollaborationProfileUpdater(
 
         var parts = new List<string>();
 
-        var lastSignalsDisplay = events
-            .Where(e => e.Type == "view.change"
-                && string.Equals(
-                    e.Meta?.GetValueOrDefault("preferenceAxis"),
-                    "signalsDisplay",
-                    StringComparison.OrdinalIgnoreCase))
-            .OrderBy(e => e.At)
-            .Select(e => e.Meta?.GetValueOrDefault("to"))
-            .LastOrDefault(v => !string.IsNullOrWhiteSpace(v));
-
+        var lastSignalsDisplay = LastSignalsDisplay(events);
         if (!string.IsNullOrWhiteSpace(lastSignalsDisplay))
         {
             parts.Add(
                 lastSignalsDisplay.Equals("graph", StringComparison.OrdinalIgnoreCase)
                     ? "prefers relative graph signal display over numeric values"
-                    : "prefers numeric values signal display over graphs");
+                    : "prefers numeric signal values over graphs");
         }
 
-        var expanded = events.Count(e => e.Type == "control.expand");
-        var collapsed = events.Count(e => e.Type == "control.collapse");
+        var expanded = events.Count(e => e.Action == "control.expand");
+        var collapsed = events.Count(e => e.Action == "control.collapse");
         if (expanded > collapsed)
         {
             parts.Add("leans toward extended card detail before deciding");
         }
         else if (collapsed > expanded)
         {
-            parts.Add("leans toward summary cards without extended detail");
+            parts.Add("leans toward summary cards without opening every card");
         }
         else if (expanded > 0)
         {
@@ -213,7 +354,7 @@ public sealed class StubCollaborationProfileUpdater(
         }
 
         var signalIds = events
-            .Where(e => e.Type is "signal.focus" or "signal.activate")
+            .Where(e => e.Action is "signal.focus" or "signal.activate")
             .Select(e => e.Meta?.GetValueOrDefault("signalId") ?? e.Label)
             .Where(s => !string.IsNullOrWhiteSpace(s))
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -225,7 +366,7 @@ public sealed class StubCollaborationProfileUpdater(
         }
 
         var selected = events
-            .Where(e => e.Type == "control.select")
+            .Where(e => e.Action == "control.select")
             .Select(e => e.Label ?? e.ControlId)
             .LastOrDefault();
         if (!string.IsNullOrWhiteSpace(selected))
@@ -233,10 +374,15 @@ public sealed class StubCollaborationProfileUpdater(
             parts.Add($"selected {selected}");
         }
 
+        if (events.Any(e => e.Reversal == true))
+        {
+            parts.Add("REVERSED an agent-applied state (strongest signal)");
+        }
+
         if (parts.Count == 0)
         {
             var meaningful = events.Count(e =>
-                e.Type is not ("screen.enter" or "screen.leave"));
+                e.Action is not ("surface.enter" or "surface.leave" or "screen.enter" or "screen.leave"));
             return meaningful == 0
                 ? string.Empty
                 : $"recorded {meaningful} interaction(s) without a clear view-style cue.";
