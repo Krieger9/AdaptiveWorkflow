@@ -96,4 +96,13 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Dropping legacy __EFMigrationsHistory (if present)..."
 sqlcmd -S $Server -E -d $Database -Q "IF OBJECT_ID(N'[dbo].[__EFMigrationsHistory]', N'U') IS NOT NULL DROP TABLE [dbo].[__EFMigrationsHistory];" | Out-Null
 
+# Remove legacy collaboration tables replaced by BeliefDocuments/TurnDigests/Revisions.
+# sqlpackage publish does not drop objects missing from the source project, so these linger.
+Write-Host "Dropping legacy collaboration tables (if present)..."
+sqlcmd -S $Server -E -d $Database -Q @"
+IF OBJECT_ID(N'[dbo].[CollaborationStateChangeLogs]', N'U') IS NOT NULL DROP TABLE [dbo].[CollaborationStateChangeLogs];
+IF OBJECT_ID(N'[dbo].[CollaborationTurnDigests]', N'U') IS NOT NULL DROP TABLE [dbo].[CollaborationTurnDigests];
+IF OBJECT_ID(N'[dbo].[UserCollaborationStates]', N'U') IS NOT NULL DROP TABLE [dbo].[UserCollaborationStates];
+"@ | Out-Null
+
 Write-Host "Local database schema is up to date."
