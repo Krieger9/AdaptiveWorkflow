@@ -1,0 +1,102 @@
+.replay-page {
+  width: 100%;
+  text-align: left;
+}
+
+.replay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.replay-columns {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 2fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.replay-list {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.replay-list li {
+  margin: 0.15rem 0;
+}
+
+.replay-list .linkish.active {
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.replay-interactions {
+  padding-left: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.replay-interactions li.reversal {
+  color: #b23b3b;
+  font-weight: 600;
+}
+
+.replay-causation {
+  margin-left: 0.4rem;
+  padding: 0 0.35rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  background: #e8e8e8;
+}
+
+.replay-causation-agent-applied {
+  background: #dbe8ff;
+}
+
+.replay-causation-restored {
+  background: #f2e8ff;
+}
+
+.replay-prompt {
+  width: 100%;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.replay-run {
+  margin-top: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.replay-run pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 24rem;
+  overflow-y: auto;
+  background: #f7f7f7;
+  padding: 0.5rem;
+  border-radius: 0.35rem;
+  font-size: 0.8rem;
+}
+
+.replay-meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.2rem 1rem;
+  font-size: 0.85rem;
+}
+
+.replay-meta dt {
+  font-weight: 600;
+}
+
+.replay-meta dd {
+  margin: 0;
+  word-break: break-all;
+}

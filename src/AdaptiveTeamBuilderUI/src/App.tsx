@@ -14,6 +14,7 @@ import {
 } from './api/client'
 import { AuthCallback } from './auth/AuthCallback'
 import { HomePage } from './components/HomePage'
+import { ReplayPage } from './components/ReplayPage'
 import {
   AUTH_CALLBACK_PATH,
   AUTH_REDIRECT_URI,
@@ -216,10 +217,25 @@ function App() {
               setError(null)
               setView('home')
               setHomeKey((value) => value + 1)
+              window.history.pushState({}, '', '/')
+              setPath('/')
             }}
           >
             Home
           </button>
+          {import.meta.env.DEV && (
+            <button
+              type="button"
+              className="linkish"
+              onClick={() => {
+                setError(null)
+                window.history.pushState({}, '', '/replay')
+                setPath('/replay')
+              }}
+            >
+              Replay
+            </button>
+          )}
           <button type="button" className="linkish" onClick={openEdit}>
             My account
           </button>
@@ -232,9 +248,13 @@ function App() {
       <main className={view === 'home' ? 'app wide' : 'app'}>
         {error && <p className="error">{error}</p>}
 
-        {view === 'home' && user && (
-          <HomePage key={homeKey} userId={user.id} onError={setError} />
-        )}
+        {import.meta.env.DEV && path.startsWith('/replay') ? (
+          <ReplayPage onError={setError} />
+        ) : (
+          <>
+            {view === 'home' && user && (
+              <HomePage key={homeKey} userId={user.id} onError={setError} />
+            )}
 
         {view === 'edit' && (
           <section className="panel">
@@ -273,8 +293,10 @@ function App() {
                   {busy ? 'Saving…' : 'Save'}
                 </button>
               </div>
-            </form>
-          </section>
+              </form>
+            </section>
+            )}
+          </>
         )}
       </main>
     </div>

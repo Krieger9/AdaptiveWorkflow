@@ -9,11 +9,13 @@ import type {
 } from '../collaboration/types'
 
 export type {
+  BeliefProfile,
   CollaborationAdviseRequest,
   CollaborationAdviseResponse,
   CollaborationObservationsRequest,
   CollaborationObservationsResponse,
   CollaborationProfileResponse,
+  Interaction,
 }
 
 export const apiBaseUrl =
