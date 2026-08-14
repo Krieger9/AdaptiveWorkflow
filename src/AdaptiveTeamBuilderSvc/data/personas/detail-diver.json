@@ -1,0 +1,62 @@
+{
+  "name": "detail-diver",
+  "description": "Reads numeric values and opens extended detail on candidates before deciding. Pre-warms beliefs on information-form (values) and disclosure-default (expand-before-deciding).",
+  "turns": [
+    {
+      "interactions": [
+        {
+          "action": "control.expand",
+          "contractIndex": 0,
+          "meta": {
+            "meaning": "show-extended-detail",
+            "fromDetailLevel": "summary",
+            "toDetailLevel": "extended",
+            "signalsDisplay": "values"
+          }
+        },
+        {
+          "action": "control.expand",
+          "contractIndex": 1,
+          "meta": {
+            "meaning": "show-extended-detail",
+            "fromDetailLevel": "summary",
+            "toDetailLevel": "extended",
+            "signalsDisplay": "values"
+          }
+        },
+        {
+          "action": "control.select",
+          "contractIndex": 1,
+          "meta": {
+            "meaning": "chose-engagement-to-staff",
+            "detailLevel": "extended",
+            "signalsDisplay": "values"
+          }
+        }
+      ]
+    },
+    {
+      "interactions": [
+        {
+          "action": "control.expand",
+          "contractIndex": 2,
+          "meta": {
+            "meaning": "show-extended-detail",
+            "fromDetailLevel": "summary",
+            "toDetailLevel": "extended",
+            "signalsDisplay": "values"
+          }
+        },
+        {
+          "action": "control.select",
+          "contractIndex": 2,
+          "meta": {
+            "meaning": "chose-engagement-to-staff",
+            "detailLevel": "extended",
+            "signalsDisplay": "values"
+          }
+        }
+      ]
+    }
+  ]
+}

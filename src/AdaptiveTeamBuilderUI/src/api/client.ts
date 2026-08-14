@@ -524,3 +524,26 @@ export async function getCollaborationProfileDocument(): Promise<BeliefProfile> 
   const response = await getCollaborationProfile()
   return response.profile
 }
+
+export async function listCollaborationPersonas(): Promise<string[]> {
+  const response = await fetch(`${apiBaseUrl}/api/collaboration/personas`, {
+    headers: await authHeaders(),
+  })
+  return parseJson<string[]>(response)
+}
+
+export type PersonaRunResult = {
+  persona: string
+  sessionId: string
+  turnCount: number
+  interactionCount: number
+  runIds: string[]
+}
+
+export async function runCollaborationPersona(name: string): Promise<PersonaRunResult> {
+  const response = await fetch(
+    `${apiBaseUrl}/api/collaboration/personas/${encodeURIComponent(name)}/run`,
+    { method: 'POST', headers: await authHeaders() },
+  )
+  return parseJson<PersonaRunResult>(response)
+}

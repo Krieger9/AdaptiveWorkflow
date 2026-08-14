@@ -1,0 +1,64 @@
+{
+  "name": "graph-scanner",
+  "description": "Scans relative graph signals rather than reading numeric values; opens one card at most before committing. Pre-warms beliefs on information-form (graph) and disclosure-default (summary-first).",
+  "turns": [
+    {
+      "interactions": [
+        {
+          "action": "view.change",
+          "meta": {
+            "preferenceAxis": "signalsDisplay",
+            "from": "values",
+            "to": "graph",
+            "meaning": "switched-to-relative-graph-signals"
+          }
+        },
+        {
+          "action": "control.select",
+          "contractIndex": 0,
+          "meta": {
+            "meaning": "chose-engagement-to-staff",
+            "detailLevel": "summary",
+            "signalsDisplay": "graph"
+          }
+        }
+      ]
+    },
+    {
+      "interactions": [
+        {
+          "action": "control.expand",
+          "contractIndex": 1,
+          "meta": {
+            "meaning": "show-extended-detail",
+            "fromDetailLevel": "summary",
+            "toDetailLevel": "extended",
+            "signalsDisplay": "graph"
+          }
+        },
+        {
+          "action": "control.select",
+          "contractIndex": 1,
+          "meta": {
+            "meaning": "chose-engagement-to-staff",
+            "detailLevel": "extended",
+            "signalsDisplay": "graph"
+          }
+        }
+      ]
+    },
+    {
+      "interactions": [
+        {
+          "action": "control.select",
+          "contractIndex": 2,
+          "meta": {
+            "meaning": "chose-engagement-to-staff",
+            "detailLevel": "summary",
+            "signalsDisplay": "graph"
+          }
+        }
+      ]
+    }
+  ]
+}

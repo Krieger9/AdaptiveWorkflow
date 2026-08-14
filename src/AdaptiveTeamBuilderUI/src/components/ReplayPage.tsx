@@ -2,9 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   getCollaborationRun,
   getCollaborationSessionInteractions,
+  listCollaborationPersonas,
   listCollaborationRuns,
   listCollaborationSessions,
   replayCollaborationSession,
+  runCollaborationPersona,
   type AgentRunRecord,
   type AgentRunSummary,
   type Interaction,
@@ -29,16 +31,20 @@ export function ReplayPage({ onError }: ReplayPageProps) {
   const [promptOverride, setPromptOverride] = useState('')
   const [replaying, setReplaying] = useState(false)
   const [replayResult, setReplayResult] = useState<AgentRunRecord | null>(null)
+  const [personas, setPersonas] = useState<string[]>([])
+  const [runningPersona, setRunningPersona] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
     onError(null)
     try {
-      const [sessionIds, runSummaries] = await Promise.all([
+      const [sessionIds, runSummaries, personaNames] = await Promise.all([
         listCollaborationSessions(),
         listCollaborationRuns(),
+        listCollaborationPersonas(),
       ])
       setSessions(sessionIds)
       setRuns(runSummaries)
+      setPersonas(personaNames)
     } catch (err) {
       onError(err instanceof Error ? err.message : 'Failed to load replay data')
     }
@@ -89,6 +95,23 @@ export function ReplayPage({ onError }: ReplayPageProps) {
     }
   }
 
+  async function runPersona(name: string) {
+    if (runningPersona) {
+      return
+    }
+    setRunningPersona(name)
+    onError(null)
+    try {
+      const result = await runCollaborationPersona(name)
+      await refresh()
+      await openSession(result.sessionId)
+    } catch (err) {
+      onError(err instanceof Error ? err.message : 'Persona run failed')
+    } finally {
+      setRunningPersona(null)
+    }
+  }
+
   function causationBadge(interaction: Interaction) {
     const causation = interaction.causation ?? 'user'
     return (
@@ -110,6 +133,25 @@ export function ReplayPage({ onError }: ReplayPageProps) {
 
       <div className="replay-columns">
         <div className="replay-column">
+          {personas.length > 0 && (
+            <>
+              <h2>Synthetic personas</h2>
+              <ul className="replay-list">
+                {personas.map((name) => (
+                  <li key={name}>
+                    <button
+                      type="button"
+                      disabled={runningPersona !== null}
+                      onClick={() => void runPersona(name)}
+                    >
+                      {runningPersona === name ? 'Running…' : `Run ${name}`}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
           <h2>Sessions</h2>
           {sessions.length === 0 && <p className="muted">No recorded sessions yet.</p>}
           <ul className="replay-list">

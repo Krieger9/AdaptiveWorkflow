@@ -38,6 +38,8 @@ public static class CollaborationEndpoints
             group.MapGet("/sessions", ListSessions);
             group.MapGet("/sessions/{sessionId}/interactions", GetSessionInteractionsAsync);
             group.MapPost("/replay", ReplayAsync);
+            group.MapGet("/personas", ListPersonas);
+            group.MapPost("/personas/{name}/run", RunPersonaAsync);
         }
 
         return group;
@@ -336,6 +338,80 @@ public static class CollaborationEndpoints
                     PromptOverride: request.PromptOverride)),
             cancellationToken);
         return Results.Ok(record);
+    }
+
+    private static IResult ListPersonas(SyntheticPersonaProvider personas) =>
+        Results.Ok(personas.ListNames());
+
+    /// <summary>
+    /// Runs a scripted persona through the real observations pipeline (JSONL log,
+    /// DB rows, reversal flags, profile updater) to pre-warm a believable belief
+    /// profile before a demo. Dev-only.
+    /// </summary>
+    private static async Task<IResult> RunPersonaAsync(
+        string name,
+        ClaimsPrincipal principal,
+        AdaptiveTeamBuilderDbContext db,
+        SyntheticPersonaProvider personas,
+        IInteractionLog interactionLog,
+        CollaborationProfileUpdateBackgroundService updateService,
+        CancellationToken cancellationToken)
+    {
+        var user = await ResolveUserAsync(principal, db, cancellationToken);
+        if (user is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var script = personas.Get(name);
+        if (script is null)
+        {
+            return Results.NotFound(new { error = $"No persona script named '{name}'." });
+        }
+
+        var contracts = await db.Contracts
+            .AsNoTracking()
+            .OrderBy(c => c.DemoSortOrder)
+            .ThenBy(c => c.Code)
+            .ToListAsync(cancellationToken);
+        if (contracts.Count == 0)
+        {
+            return Results.NotFound(new { error = "No contracts available to script against." });
+        }
+
+        var sessionId = $"persona_{name}_{DateTime.UtcNow:yyyyMMddHHmmss}";
+        var turns = personas.Synthesize(script, contracts, sessionId);
+        var runIds = new List<string>();
+
+        foreach (var batch in turns)
+        {
+            var flagged = CollaborationContextFormatter.FlagReversals(batch);
+            await interactionLog.AppendAsync(user.Id, sessionId, flagged, cancellationToken);
+            await PersistInteractionsAsync(db, user.Id, sessionId, flagged, cancellationToken);
+
+            var record = await updateService.ProcessAsync(
+                new CollaborationProfileUpdateWorkItem(
+                    user.Id,
+                    flagged,
+                    new CollaborationProfileUpdateContext(
+                        "page:contracts / section:contracts.list",
+                        "Select a contract",
+                        null,
+                        null,
+                        SessionId: sessionId,
+                        Trigger: "persona")),
+                cancellationToken);
+            runIds.Add(record.RunId);
+        }
+
+        return Results.Ok(new
+        {
+            persona = script.Name,
+            sessionId,
+            turnCount = turns.Count,
+            interactionCount = turns.Sum(t => t.Count),
+            runIds,
+        });
     }
 
     // --- Helpers --------------------------------------------------------------------------

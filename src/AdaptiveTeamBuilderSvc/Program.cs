@@ -80,6 +80,7 @@ builder.Services.AddSingleton<GlossaryProvider>();
 builder.Services.AddSingleton<IInteractionLog, FileInteractionLog>();
 builder.Services.AddSingleton<IAgentRunRecorder, FileAgentRunRecorder>();
 builder.Services.AddSingleton<ShadowCounterService>();
+builder.Services.AddSingleton<SyntheticPersonaProvider>();
 builder.Services.AddSingleton<IAdaptationApprovalPolicy, AutoApproveAdaptationPolicy>();
 builder.Services.AddSingleton<StubCollaborationAdvisor>();
 builder.Services.AddSingleton<StubCollaborationProfileUpdater>();
