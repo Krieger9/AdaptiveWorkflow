@@ -78,7 +78,10 @@ public sealed class FoundryCollaborationAgents
                 + "digests on the new pattern/signal, COMMIT and remove the contradicted claim. "
                 + "Keep the profile concise; rewrite noisy stub appends into clean preferences. "
                 + "Preserve only preferences still supported by recent digests + this turn. "
-                + "Return only TendencyProse — the full updated profile text.",
+                + "Return TendencyProse (the full updated profile text) and, whenever you "
+                + "actually change the profile, a concise changeReason stating why "
+                + "(e.g. 'User selected graph view 3 turns running; switching to graph display'). "
+                + "Leave changeReason null/empty when the profile is unchanged.",
             name: ProfileUpdaterAgentName,
             description: "Updates user collaboration tendency prose from observation batches.");
     }

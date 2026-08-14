@@ -44,6 +44,12 @@ public sealed class AdviseAgentSuggestion
 public sealed class ProfileUpdateAgentResult
 {
     public string TendencyProse { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Concise natural-language reason for the change, set only when the profile is actually
+    /// changed (e.g. "User selected graph view 3 turns running; switching to graph display").
+    /// </summary>
+    public string? ChangeReason { get; set; }
 }
 
 public static class AdviseAgentResultMapper

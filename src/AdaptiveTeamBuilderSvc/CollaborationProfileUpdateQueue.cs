@@ -87,13 +87,13 @@ public sealed class CollaborationProfileUpdateBackgroundService(
                     item.Events,
                     CollaborationContextFormatter.ActiveProfileSummary(current),
                     context.ScreenId);
-                var digests = EfCollaborationProfileStore.AppendDigest(
-                    current.RecentTurnDigests,
-                    digest);
 
-                await store.SaveAsync(
+                await store.SaveAsync(item.UserId, updated.Profile, stoppingToken);
+                var digestId = await store.AppendTurnDigestAsync(item.UserId, digest, stoppingToken);
+                await store.AppendChangeLogAsync(
                     item.UserId,
-                    updated with { RecentTurnDigests = digests },
+                    updated.ChangeReason,
+                    digestId,
                     stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

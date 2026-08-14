@@ -1,4 +1,3 @@
-using System.Text.Json;
 using AdaptiveTeamBuilder.Data;
 using AdaptiveTeamBuilder.Data.Contracts;
 using AdaptiveTeamBuilder.Data.Entities;
@@ -14,22 +13,29 @@ public interface ICollaborationProfileStore
         Guid userId,
         CollaborationTendencyBundleDto profile,
         CancellationToken cancellationToken);
+
+    Task<long?> AppendTurnDigestAsync(
+        Guid userId,
+        string? digest,
+        CancellationToken cancellationToken);
+
+    Task AppendChangeLogAsync(
+        Guid userId,
+        string? reason,
+        long? turnDigestId,
+        CancellationToken cancellationToken);
 }
 
 public sealed class EfCollaborationProfileStore(AdaptiveTeamBuilderDbContext db)
     : ICollaborationProfileStore
 {
+    /// <summary>Number of most-recent digests surfaced to the updater/advisor prompts.</summary>
     public const int MaxRecentTurnDigests = 5;
 
     public const string DefaultAppTendencyProse =
         "On Select Contract, start with numeric signal values and summary cards. "
         + "Expand a card for extended staffing/scope detail before selecting. "
         + "No preferred commercial signal or graph-vs-values preference yet.";
-
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    };
 
     public async Task<CollaborationTendencyBundleDto> GetAsync(
         Guid userId,
@@ -38,7 +44,16 @@ public sealed class EfCollaborationProfileStore(AdaptiveTeamBuilderDbContext db)
         var state = await db.UserCollaborationStates.AsNoTracking()
             .FirstOrDefaultAsync(s => s.UserId == userId, cancellationToken);
 
-        return ToBundle(state);
+        // Newest N rows, then reversed to oldest->newest for prompt formatting.
+        var recent = await db.CollaborationTurnDigests.AsNoTracking()
+            .Where(d => d.UserId == userId)
+            .OrderByDescending(d => d.Sequence)
+            .Take(MaxRecentTurnDigests)
+            .Select(d => d.DigestText)
+            .ToListAsync(cancellationToken);
+        recent.Reverse();
+
+        return ToBundle(state, recent);
     }
 
     public async Task SaveAsync(
@@ -61,35 +76,63 @@ public sealed class EfCollaborationProfileStore(AdaptiveTeamBuilderDbContext db)
         stored.TendencyProse = profile.UserOverride;
         stored.TendencySource = profile.Source;
         stored.UpdatedAt = profile.UpdatedAt ?? DateTime.UtcNow;
-        stored.RecentTurnDigestsJson = SerializeDigests(profile.RecentTurnDigests);
 
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    public static IReadOnlyList<string> AppendDigest(
-        IReadOnlyList<string>? existing,
+    public async Task<long?> AppendTurnDigestAsync(
+        Guid userId,
         string? digest,
-        int max = MaxRecentTurnDigests)
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(digest))
         {
-            return existing ?? [];
+            return null;
         }
 
-        var list = existing?.ToList() ?? [];
-        list.Add(digest.Trim());
-        while (list.Count > max)
+        var nextSequence = await db.CollaborationTurnDigests
+            .Where(d => d.UserId == userId)
+            .MaxAsync(d => (int?)d.Sequence, cancellationToken) ?? 0;
+
+        var entity = new CollaborationTurnDigest
         {
-            list.RemoveAt(0);
-        }
+            UserId = userId,
+            Sequence = nextSequence + 1,
+            CreatedAt = DateTime.UtcNow,
+            DigestText = digest.Trim(),
+        };
+        db.CollaborationTurnDigests.Add(entity);
 
-        return list;
+        await db.SaveChangesAsync(cancellationToken);
+        return entity.Id;
     }
 
-    private static CollaborationTendencyBundleDto ToBundle(UserCollaborationState? state)
+    public async Task AppendChangeLogAsync(
+        Guid userId,
+        string? reason,
+        long? turnDigestId,
+        CancellationToken cancellationToken)
     {
-        var digests = DeserializeDigests(state?.RecentTurnDigestsJson);
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return;
+        }
 
+        db.CollaborationStateChangeLogs.Add(new CollaborationStateChangeLog
+        {
+            UserId = userId,
+            TurnDigestId = turnDigestId,
+            Reason = reason.Trim(),
+            CreatedAt = DateTime.UtcNow,
+        });
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static CollaborationTendencyBundleDto ToBundle(
+        UserCollaborationState? state,
+        IReadOnlyList<string> digests)
+    {
         if (state?.TendencyProse is { Length: > 0 })
         {
             return new CollaborationTendencyBundleDto(
@@ -106,33 +149,5 @@ public sealed class EfCollaborationProfileStore(AdaptiveTeamBuilderDbContext db)
             null,
             "app",
             digests);
-    }
-
-    private static IReadOnlyList<string> DeserializeDigests(string? json)
-    {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return [];
-        }
-
-        try
-        {
-            var parsed = JsonSerializer.Deserialize<List<string>>(json, JsonOptions);
-            return parsed is { Count: > 0 } ? parsed : [];
-        }
-        catch (JsonException)
-        {
-            return [];
-        }
-    }
-
-    private static string? SerializeDigests(IReadOnlyList<string>? digests)
-    {
-        if (digests is null || digests.Count == 0)
-        {
-            return null;
-        }
-
-        return JsonSerializer.Serialize(digests.ToList(), JsonOptions);
     }
 }

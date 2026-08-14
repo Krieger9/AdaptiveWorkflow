@@ -18,7 +18,7 @@ public sealed class AgentCollaborationProfileUpdater(
         PropertyNameCaseInsensitive = true,
     };
 
-    public async Task<CollaborationTendencyBundleDto> UpdateFromObservationsAsync(
+    public async Task<CollaborationProfileUpdateResult> UpdateFromObservationsAsync(
         CollaborationTendencyBundleDto current,
         IReadOnlyList<CollaborationInteractionEventDto> events,
         CollaborationProfileUpdateContext? context = null,
@@ -26,7 +26,7 @@ public sealed class AgentCollaborationProfileUpdater(
     {
         if (events.Count == 0)
         {
-            return current;
+            return new CollaborationProfileUpdateResult(current);
         }
 
         var prompt = StubCollaborationProfileUpdater.BuildUpdatePrompt(current, events, context);
@@ -46,6 +46,7 @@ public sealed class AgentCollaborationProfileUpdater(
                 logger.LogWarning(
                     "Foundry profile updater returned empty TendencyProse; using stub updater.");
                 var stub = fallback.UpdateFromObservations(current, events);
+                var stubReason = StubCollaborationProfileUpdater.SummarizeChangeReason(events);
                 await transcripts.WriteAsync(
                     new CollaborationAgentTranscript
                     {
@@ -60,10 +61,11 @@ public sealed class AgentCollaborationProfileUpdater(
                         {
                             foundryResult = agentResponse.Result,
                             appliedProfile = stub,
+                            changeReason = stubReason,
                         },
                     },
                     cancellationToken);
-                return stub;
+                return new CollaborationProfileUpdateResult(stub, stubReason);
             }
 
             var updated = new CollaborationTendencyBundleDto(
@@ -71,6 +73,7 @@ public sealed class AgentCollaborationProfileUpdater(
                 prose,
                 DateTime.UtcNow,
                 "llm");
+            var changeReason = agentResponse.Result?.ChangeReason?.Trim();
 
             await transcripts.WriteAsync(
                 new CollaborationAgentTranscript
@@ -90,12 +93,15 @@ public sealed class AgentCollaborationProfileUpdater(
                 },
                 cancellationToken);
 
-            return updated;
+            return new CollaborationProfileUpdateResult(
+                updated,
+                string.IsNullOrWhiteSpace(changeReason) ? null : changeReason);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogError(ex, "Foundry profile updater failed; falling back to stub updater.");
             var stub = fallback.UpdateFromObservations(current, events);
+            var stubReason = StubCollaborationProfileUpdater.SummarizeChangeReason(events);
             await transcripts.WriteAsync(
                 new CollaborationAgentTranscript
                 {
@@ -105,11 +111,11 @@ public sealed class AgentCollaborationProfileUpdater(
                     RetrievedProfile = current,
                     TurnContext = context,
                     Events = events,
-                    ResponseObject = new { appliedProfile = stub },
+                    ResponseObject = new { appliedProfile = stub, changeReason = stubReason },
                     Error = ex.ToString(),
                 },
                 cancellationToken);
-            return stub;
+            return new CollaborationProfileUpdateResult(stub, stubReason);
         }
     }
 }

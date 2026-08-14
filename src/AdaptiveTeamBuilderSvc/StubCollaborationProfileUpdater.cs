@@ -4,7 +4,7 @@ namespace AdaptiveTeamBuilderSvc;
 
 public interface ICollaborationProfileUpdater
 {
-    Task<CollaborationTendencyBundleDto> UpdateFromObservationsAsync(
+    Task<CollaborationProfileUpdateResult> UpdateFromObservationsAsync(
         CollaborationTendencyBundleDto current,
         IReadOnlyList<CollaborationInteractionEventDto> events,
         CollaborationProfileUpdateContext? context = null,
@@ -12,12 +12,20 @@ public interface ICollaborationProfileUpdater
 }
 
 /// <summary>
+/// Outcome of a profile update: the applied profile plus an optional natural-language reason
+/// the AI gave for changing it (null when nothing meaningful changed).
+/// </summary>
+public sealed record CollaborationProfileUpdateResult(
+    CollaborationTendencyBundleDto Profile,
+    string? ChangeReason = null);
+
+/// <summary>
 /// Heuristic profile updater used when Foundry is not configured, and as a failure fallback.
 /// </summary>
 public sealed class StubCollaborationProfileUpdater(
     ICollaborationAgentTranscriptLogger transcripts) : ICollaborationProfileUpdater
 {
-    public async Task<CollaborationTendencyBundleDto> UpdateFromObservationsAsync(
+    public async Task<CollaborationProfileUpdateResult> UpdateFromObservationsAsync(
         CollaborationTendencyBundleDto current,
         IReadOnlyList<CollaborationInteractionEventDto> events,
         CollaborationProfileUpdateContext? context = null,
@@ -26,6 +34,7 @@ public sealed class StubCollaborationProfileUpdater(
         cancellationToken.ThrowIfCancellationRequested();
         var prompt = BuildUpdatePrompt(current, events, context);
         var updated = UpdateFromObservations(current, events);
+        var reason = SummarizeChangeReason(events);
         await transcripts.WriteAsync(
             new CollaborationAgentTranscript
             {
@@ -35,10 +44,23 @@ public sealed class StubCollaborationProfileUpdater(
                 RetrievedProfile = current,
                 TurnContext = context,
                 Events = events,
-                ResponseObject = new { appliedProfile = updated },
+                ResponseObject = new { appliedProfile = updated, changeReason = reason },
             },
             cancellationToken);
-        return updated;
+        return new CollaborationProfileUpdateResult(updated, reason);
+    }
+
+    /// <summary>
+    /// Builds a concise reason from this batch's preference signals, or null when there are no
+    /// signals worth recording (so the caller can skip logging a no-op change).
+    /// </summary>
+    public static string? SummarizeChangeReason(
+        IReadOnlyList<CollaborationInteractionEventDto> events)
+    {
+        var observations = SummarizePreferenceSignals(events);
+        return string.IsNullOrWhiteSpace(observations)
+            ? null
+            : "(Stub updater) Preference cues from latest Select Contract turn: " + observations;
     }
 
     public CollaborationTendencyBundleDto UpdateFromObservations(
@@ -140,7 +162,10 @@ public sealed class StubCollaborationProfileUpdater(
             + "the old commercial-signal / compareStyle claim. "
             + "If activeSummary already matches this turn, you may strengthen it. "
             + "Use timing cues to down-weight accidental toggles. "
-            + "Do not preserve contradicted preferences out of loyalty to prior prose.");
+            + "Do not preserve contradicted preferences out of loyalty to prior prose. "
+            + "When you actually change the profile, also return a concise changeReason "
+            + "explaining why (e.g. 'User selected graph view 3 turns running; switching to "
+            + "graph display'); leave changeReason null/empty when the profile is unchanged.");
         return sb.ToString().TrimEnd();
     }
 

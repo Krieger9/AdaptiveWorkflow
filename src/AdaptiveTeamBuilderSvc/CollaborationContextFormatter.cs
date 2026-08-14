@@ -500,13 +500,40 @@ public static class CollaborationContextFormatter
             }
         }
 
-        var contradiction = DetectContradictionFlags(activeSummary, pattern, rankBits);
+        var signalsDisplay = NormalizeSignalsDisplay(viewState?.SignalsDisplay);
+        var contradiction = DetectContradictionFlags(activeSummary, pattern, rankBits, signalsDisplay);
 
         return
             $"{DateTime.UtcNow:yyyy-MM-ddTHH:mmZ} {(screenId ?? "select-contract")}: "
             + $"pattern={pattern}; expanded={expandedCount}/{visible}"
+            + (signalsDisplay is null ? string.Empty : $"; display={signalsDisplay}")
             + (rankBits.Count > 0 ? "; " + string.Join("; ", rankBits) : string.Empty)
             + (contradiction is null ? string.Empty : "; " + contradiction);
+    }
+
+    /// <summary>
+    /// Normalizes the raw signalsDisplay view-state value to a compact digest token
+    /// ("graph" or "values"), or null when unknown so the axis is simply omitted.
+    /// </summary>
+    private static string? NormalizeSignalsDisplay(string? signalsDisplay)
+    {
+        if (string.IsNullOrWhiteSpace(signalsDisplay))
+        {
+            return null;
+        }
+
+        if (signalsDisplay.Contains("graph", StringComparison.OrdinalIgnoreCase))
+        {
+            return "graph";
+        }
+
+        if (signalsDisplay.Contains("value", StringComparison.OrdinalIgnoreCase)
+            || signalsDisplay.Contains("numeric", StringComparison.OrdinalIgnoreCase))
+        {
+            return "values";
+        }
+
+        return null;
     }
 
     public static string FormatRecentTurnDigests(IReadOnlyList<string>? digests)
@@ -531,6 +558,10 @@ public static class CollaborationContextFormatter
             + "activeSummary, rewrite TendencyProse to the new habit and drop the old claim. "
             + "pattern=keep-top-two-then-select (or expanded=2/3 with keep-top-2 ranks) overrides "
             + "a sticky expand-one claim; expand-one digests override sticky keep-top-two. "
+            + "The same rule applies to the display= token: if ≥2 recent digests show "
+            + "display=graph while activeSummary claims numeric/values (or display=values vs a "
+            + "graph claim), commit the switch, rewrite the durable signalsDisplay preference, and "
+            + "set preferredLayout.signalsDisplay accordingly. "
             + "A single contradictory digest may mark the prior habit as under review.");
         return sb.ToString().TrimEnd();
     }
@@ -581,7 +612,8 @@ public static class CollaborationContextFormatter
     private static string? DetectContradictionFlags(
         string? activeSummary,
         string pattern,
-        IReadOnlyList<string> rankBits)
+        IReadOnlyList<string> rankBits,
+        string? signalsDisplay = null)
     {
         if (string.IsNullOrWhiteSpace(activeSummary))
         {
@@ -590,6 +622,31 @@ public static class CollaborationContextFormatter
 
         var summary = activeSummary.ToLowerInvariant();
         var flags = new List<string>();
+
+        // signalsDisplay axis (graph vs numeric/values). Mirror the prose emitted by
+        // SummarizePreferenceSignals ("prefers numeric values signal display over graphs" /
+        // "prefers relative graph signal display over numeric values"). Key on the "X signal
+        // display" ordering so the trailing "over Y" clause does not cross-trigger the opposite
+        // claim.
+        var claimsNumericDisplay = summary.Contains("values signal display", StringComparison.Ordinal)
+            || summary.Contains("numeric signal display", StringComparison.Ordinal)
+            || summary.Contains("signalsdisplay=values", StringComparison.Ordinal)
+            || summary.Contains("signalsdisplay: values", StringComparison.Ordinal);
+        var claimsGraphDisplay = summary.Contains("graph signal display", StringComparison.Ordinal)
+            || summary.Contains("relative graph", StringComparison.Ordinal)
+            || summary.Contains("signalsdisplay=graph", StringComparison.Ordinal)
+            || summary.Contains("signalsdisplay: graph", StringComparison.Ordinal);
+
+        if (claimsNumericDisplay
+            && string.Equals(signalsDisplay, "graph", StringComparison.OrdinalIgnoreCase))
+        {
+            flags.Add("CONTRADICTS prior numeric-display claim (this turn graph)");
+        }
+        else if (claimsGraphDisplay
+            && string.Equals(signalsDisplay, "values", StringComparison.OrdinalIgnoreCase))
+        {
+            flags.Add("CONTRADICTS prior graph-display claim (this turn numeric values)");
+        }
 
         var claimsMargin = summary.Contains("margin", StringComparison.Ordinal)
             && (summary.Contains("prefer", StringComparison.Ordinal)
@@ -680,6 +737,11 @@ public static class CollaborationContextFormatter
                 durable commercial-signal / compareStyle claim from TendencyProse.
               * expanded=2/3 with keep-top-2 rank cues IS keep-top-two even with zero collapse events
                 (the third card may never have been opened).
+              * signalsDisplay shifts the same way: recent digests carry a display=graph|values
+                token. If ≥2 recent digests contradict the stored signalsDisplay (e.g. profile says
+                numeric/values but digests show display=graph, or the reverse), COMMIT the switch,
+                rewrite the durable signalsDisplay preference, and set preferredLayout.signalsDisplay.
+                Do not re-assert the old display preference out of loyalty to prior prose.
               * Preserve only preferences that this turn and recent digests still support.
             - Preferred commercial signal commitment:
               * Confirming turns on the SAME signal may commit (keep-top-2, collapse-lowest, or

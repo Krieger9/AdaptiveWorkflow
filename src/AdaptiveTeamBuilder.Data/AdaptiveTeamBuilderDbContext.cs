@@ -14,6 +14,10 @@ public class AdaptiveTeamBuilderDbContext : DbContext
 
     public DbSet<UserCollaborationState> UserCollaborationStates => Set<UserCollaborationState>();
 
+    public DbSet<CollaborationTurnDigest> CollaborationTurnDigests => Set<CollaborationTurnDigest>();
+
+    public DbSet<CollaborationStateChangeLog> CollaborationStateChangeLogs => Set<CollaborationStateChangeLog>();
+
     public DbSet<PositionType> PositionTypes => Set<PositionType>();
 
     public DbSet<ExperienceLevel> ExperienceLevels => Set<ExperienceLevel>();
@@ -92,12 +96,42 @@ public class AdaptiveTeamBuilderDbContext : DbContext
         collab.ToTable("UserCollaborationStates");
         collab.HasKey(c => c.UserId);
         collab.Property(c => c.TendencySource).IsRequired().HasMaxLength(32);
-        collab.Property(c => c.RecentTurnDigestsJson);
         collab.Property(c => c.UpdatedAt).IsRequired();
         collab.HasOne(c => c.User)
             .WithOne()
             .HasForeignKey<UserCollaborationState>(c => c.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        var turnDigest = modelBuilder.Entity<CollaborationTurnDigest>();
+        turnDigest.ToTable("CollaborationTurnDigests");
+        turnDigest.HasKey(d => d.Id);
+        turnDigest.Property(d => d.Id).ValueGeneratedOnAdd();
+        turnDigest.Property(d => d.Sequence).IsRequired();
+        turnDigest.Property(d => d.CreatedAt).IsRequired();
+        turnDigest.Property(d => d.DigestText).IsRequired();
+        turnDigest.HasIndex(d => new { d.UserId, d.Sequence })
+            .HasDatabaseName("IX_CollaborationTurnDigests_UserId_Sequence");
+        turnDigest.HasOne(d => d.User)
+            .WithMany()
+            .HasForeignKey(d => d.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        var changeLog = modelBuilder.Entity<CollaborationStateChangeLog>();
+        changeLog.ToTable("CollaborationStateChangeLogs");
+        changeLog.HasKey(l => l.Id);
+        changeLog.Property(l => l.Id).ValueGeneratedOnAdd();
+        changeLog.Property(l => l.Reason).IsRequired();
+        changeLog.Property(l => l.CreatedAt).IsRequired();
+        changeLog.HasIndex(l => new { l.UserId, l.CreatedAt })
+            .HasDatabaseName("IX_CollaborationStateChangeLogs_UserId_CreatedAt");
+        changeLog.HasOne(l => l.User)
+            .WithMany()
+            .HasForeignKey(l => l.UserId)
+            .OnDelete(DeleteBehavior.NoAction);
+        changeLog.HasOne(l => l.TurnDigest)
+            .WithMany()
+            .HasForeignKey(l => l.TurnDigestId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 
     private static void ConfigureLookups(ModelBuilder modelBuilder)
