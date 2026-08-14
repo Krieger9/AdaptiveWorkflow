@@ -24,13 +24,18 @@ const CHANGE_ACTIONS = new Set([
   'signal.activate',
 ])
 
+function randomSuffix(length: number): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(length))
+  return Array.from(bytes, (b) => (b % 36).toString(36)).join('')
+}
+
 function createSessionId(): string {
   const now = new Date()
   const stamp =
     `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, '0')}` +
     `${String(now.getUTCDate()).padStart(2, '0')}t` +
     `${String(now.getUTCHours()).padStart(2, '0')}${String(now.getUTCMinutes()).padStart(2, '0')}`
-  return `s_${stamp}_${Math.random().toString(36).slice(2, 6)}`
+  return `s_${stamp}_${randomSuffix(4)}`
 }
 
 export type RecordInteractionInput = {
@@ -70,7 +75,7 @@ export function recordInteraction(input: RecordInteractionInput): Interaction {
 
   sequence += 1
   const interaction: Interaction = {
-    id: `i_${sequence}_${Math.random().toString(36).slice(2, 8)}`,
+    id: `i_${sequence}_${randomSuffix(6)}`,
     at,
     sessionId,
     seq: sequence,
