@@ -9,11 +9,9 @@ const clientId = import.meta.env.VITE_AZURE_CLIENT_ID as string | undefined
 const tenantId = import.meta.env.VITE_AZURE_TENANT_ID as string | undefined
 const apiScope = import.meta.env.VITE_AZURE_API_SCOPE as string | undefined
 
-export const AUTH_CALLBACK_PATH = '/auth/callback'
-
 /** Must match the SPA redirect URI registered in Entra exactly. */
 export const SPA_ORIGIN = 'http://localhost:5173'
-export const AUTH_REDIRECT_URI = `${SPA_ORIGIN}${AUTH_CALLBACK_PATH}`
+export const AUTH_REDIRECT_URI = `${SPA_ORIGIN}/auth/callback`
 
 export const entraConfigured =
   Boolean(clientId) &&

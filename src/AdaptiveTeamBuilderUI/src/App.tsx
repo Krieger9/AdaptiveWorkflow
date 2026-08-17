@@ -12,11 +12,9 @@ import {
   verifyAccessToken,
   type User,
 } from './api/client'
-import { AuthCallback } from './auth/AuthCallback'
 import { HomePage } from './components/HomePage'
 import { ReplayPage } from './components/ReplayPage'
 import {
-  AUTH_CALLBACK_PATH,
   AUTH_REDIRECT_URI,
   SPA_ORIGIN,
   apiScopes,
@@ -154,10 +152,6 @@ function App() {
     } finally {
       setBusy(false)
     }
-  }
-
-  if (path.startsWith(AUTH_CALLBACK_PATH)) {
-    return <AuthCallback />
   }
 
   if (!entraConfigured) {
