@@ -39,7 +39,7 @@ public static partial class BeliefDocumentFormat
 
     /// <summary>Changelog entry kinds a heading must state.</summary>
     public static readonly IReadOnlyList<string> ChangelogKinds =
-        ["revised", "challenged", "created", "retired", "proposed"];
+        ["revised", "challenged", "confirmed", "refreshed", "created", "retired", "proposed"];
 
     /// <summary>Surface scope of the contracts list, used by the seeded document.</summary>
     public const string ContractsListScope = "section:contracts.list";

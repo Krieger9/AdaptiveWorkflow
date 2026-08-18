@@ -134,9 +134,9 @@ export type CollaborationPreferredLayout = {
   expandAll: boolean
   signalsDisplay?: string | null
   rationale?: string | null
-  /** When expandAll is false, expand this many highest-ranked cards by expandBySignal. */
+  /** When expandAll is false, expand this many cards by signal or concrete expand suggestions. */
   expandTopCount?: number | null
-  /** Margin | Profit | Value | Win prob. */
+  /** Margin | Profit | Value | Win prob.; may be null while ranking signals remain correlated. */
   expandBySignal?: string | null
 }
 

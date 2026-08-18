@@ -1,5 +1,6 @@
 using System.ClientModel;
 using Microsoft.Agents.AI;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using OpenAI;
 using OpenAI.Responses;
@@ -13,6 +14,8 @@ namespace AdaptiveTeamBuilderSvc;
 /// </summary>
 public sealed class FoundryCollaborationAgents
 {
+    private readonly ReasoningEffort _reasoningEffort;
+
     public const string AdvisorAgentName = "CollaborationAdvisor";
     public const string ProfileUpdaterAgentName = "CollaborationProfileUpdater";
 
@@ -51,7 +54,10 @@ public sealed class FoundryCollaborationAgents
         + "targetControlId; include the dimension the suggestion draws on and a short rationale "
         + "drawn from the belief's \"What I'm leaning on\". Prefer at most 1-3 concrete "
         + "suggestions. Do not invent control IDs. preferredLayout is auto-applied on load; "
-        + "suggestions are optional Accept actions.";
+        + "suggestions are optional Accept actions. When a working-theory-or-stronger belief "
+        + "implies an adaptation that the current view does not satisfy, return at least one "
+        + "concrete suggestion for it. Return an empty suggestions array only when evidence is "
+        + "insufficient or the current view already satisfies every supported adaptation.";
 
     /// <summary>
     /// Tier-1 (control) profile updater instructions. Public const so run records can hash
@@ -139,6 +145,7 @@ public sealed class FoundryCollaborationAgents
             throw new InvalidOperationException(
                 "AgentFramework is not configured. Set AgentFramework:ApiKey via User Secrets.");
         }
+        _reasoningEffort = ParseReasoningEffort(settings.ReasoningEffort);
 
         var client = new ResponsesClient(
             credential: new ApiKeyCredential(settings.ApiKey!),
@@ -163,6 +170,38 @@ public sealed class FoundryCollaborationAgents
     public AIAgent Advisor { get; }
 
     public AIAgent ProfileUpdater { get; }
+
+    public string ConfiguredReasoningEffort => _reasoningEffort.ToString().ToLowerInvariant();
+
+    /// <summary>
+    /// Creates fresh per-call options so framework mutations cannot leak between concurrent
+    /// advisor and profile-updater requests.
+    /// </summary>
+    public ChatClientAgentRunOptions CreateRunOptions() =>
+        new()
+        {
+            ChatOptions = new ChatOptions
+            {
+                Reasoning = new ReasoningOptions
+                {
+                    Effort = _reasoningEffort,
+                    Output = ReasoningOutput.None,
+                },
+            },
+        };
+
+    private static ReasoningEffort ParseReasoningEffort(string? configured) =>
+        configured?.Trim().ToLowerInvariant() switch
+        {
+            null or "" or "none" => ReasoningEffort.None,
+            "low" => ReasoningEffort.Low,
+            "medium" => ReasoningEffort.Medium,
+            "high" => ReasoningEffort.High,
+            "xhigh" => ReasoningEffort.ExtraHigh,
+            _ => throw new InvalidOperationException(
+                $"Unsupported AgentFramework:ReasoningEffort '{configured}'. "
+                + "Use none, low, medium, high, or xhigh."),
+        };
 }
 
 #pragma warning restore OPENAI001

@@ -21,11 +21,12 @@ public sealed record CollaborationProfileUpdateResult(
     string? ChangeReason = null,
     string? ValidationResult = "ok",
     string? RawRequest = null,
-    string? RawResponse = null);
+    string? RawResponse = null,
+    ProfileUpdateDiagnosticRecord? Diagnostics = null);
 
 /// <summary>
-/// Heuristic profile updater used when Foundry is not configured, and as a failure fallback.
-/// Maintains the belief document via parse-modify-write so the demo works without an API key.
+/// Development/test utility for deterministic profile-update scenarios. Runtime composition does
+/// not register this implementation; production failures keep the current profile unchanged.
 /// </summary>
 public sealed class StubCollaborationProfileUpdater(
     ICollaborationAgentTranscriptLogger transcripts) : ICollaborationProfileUpdater
@@ -308,8 +309,9 @@ public sealed class StubCollaborationProfileUpdater(
             + "fields: Belief, Tenure, Conviction, What I'm leaning on, What would change my mind. "
             + "Conviction must be one of: noticed, tentative, working theory, settled, entrenched. "
             + "Append at least one changelog entry stating what happened (revised / challenged / "
-            + "created / retired / proposed) and why. Use recent digests + this turn to detect "
-            + "habit shifts: when digests contradict a held belief (≥2 agreeing new patterns, or "
+            + "confirmed / refreshed / created / retired / proposed) and why. Use recent digests "
+            + "and this turn to detect habit shifts: when digests contradict a held belief (≥2 "
+            + "agreeing new patterns, or "
             + "clear CONTRADICTS flags), revise the old commercial-signal / selection-rule claim. "
             + "If a belief already matches this turn, you may raise its conviction one level. "
             + "Use timing cues to discount accidental toggles. Do not preserve contradicted "

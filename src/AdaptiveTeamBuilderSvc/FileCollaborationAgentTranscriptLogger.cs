@@ -7,9 +7,12 @@ namespace AdaptiveTeamBuilderSvc;
 
 public sealed class CollaborationAgentTranscript
 {
+    /// <summary>Correlation id shared with data/runs/{runId}.json.</summary>
+    public string? RunId { get; init; }
+
     public required string Agent { get; init; }
 
-    /// <summary>foundry | stub | stub-fallback | error</summary>
+    /// <summary>foundry | error</summary>
     public required string Source { get; init; }
 
     public required string Prompt { get; init; }
@@ -26,6 +29,9 @@ public sealed class CollaborationAgentTranscript
     public string? ResponseText { get; init; }
 
     public object? ResponseObject { get; init; }
+
+    /// <summary>Per-attempt timing, usage, provider metadata, and validation details.</summary>
+    public ProfileUpdateDiagnosticRecord? ProfileUpdateDiagnostics { get; init; }
 
     public string? Error { get; init; }
 }
@@ -68,8 +74,11 @@ public sealed class FileCollaborationAgentTranscriptLogger(
 
             var stamp = DateTime.UtcNow;
             var safeAgent = SanitizeFileToken(transcript.Agent);
+            var runToken = string.IsNullOrWhiteSpace(transcript.RunId)
+                ? string.Empty
+                : $"-{SanitizeFileToken(transcript.RunId)}";
             var fileName =
-                $"{stamp:yyyyMMdd-HHmmss-fff}-{safeAgent}-{SanitizeFileToken(transcript.Source)}.md";
+                $"{stamp:yyyyMMdd-HHmmss-fff}-{safeAgent}-{SanitizeFileToken(transcript.Source)}{runToken}.md";
             var path = Path.Combine(directory, fileName);
 
             var body = BuildMarkdown(transcript, stamp, path);
@@ -112,8 +121,22 @@ public sealed class FileCollaborationAgentTranscriptLogger(
         sb.AppendLine();
         sb.AppendLine($"- utc: `{stamp:O}`");
         sb.AppendLine($"- source: `{transcript.Source}`");
+        if (!string.IsNullOrWhiteSpace(transcript.RunId))
+        {
+            sb.AppendLine($"- run-id: `{transcript.RunId}`");
+        }
         sb.AppendLine($"- file: `{path}`");
         sb.AppendLine();
+
+        if (transcript.ProfileUpdateDiagnostics is not null)
+        {
+            sb.AppendLine("## Run diagnostics");
+            sb.AppendLine();
+            sb.AppendLine("```json");
+            sb.AppendLine(JsonSerializer.Serialize(transcript.ProfileUpdateDiagnostics, JsonOptions));
+            sb.AppendLine("```");
+            sb.AppendLine();
+        }
 
         if (transcript.RetrievedProfile is not null)
         {

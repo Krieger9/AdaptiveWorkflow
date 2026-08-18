@@ -19,7 +19,10 @@ public sealed class AdvisePreferredLayoutResult
 
     public string? Rationale { get; set; }
 
-    /// <summary>When ExpandAll is false, expand this many top-ranked cards by ExpandBySignal.</summary>
+    /// <summary>
+    /// When ExpandAll is false, expand this many cards. ExpandBySignal ranks them when known;
+    /// otherwise concrete expand suggestions identify the targets.
+    /// </summary>
     public int? ExpandTopCount { get; set; }
 
     /// <summary>Margin | Profit | Value | Win | estimatedMarginPercent | …</summary>
@@ -103,12 +106,9 @@ public static class AdviseAgentResultMapper
             expandTopCount = 2;
         }
 
-        if (expandTopCount is not null && expandBySignal is null)
-        {
-            expandTopCount = null;
-        }
-
-        // Signal-driven top-N wins over expand-all when both are present.
+        // A concrete expand suggestion can identify the target when the model has learned the
+        // preferred count but cannot yet separate correlated ranking signals.
+        // Any top-N preference wins over expand-all when both are present.
         var expandAll = layout.ExpandAll && expandTopCount is null;
 
         return new PreferredLayoutDto(

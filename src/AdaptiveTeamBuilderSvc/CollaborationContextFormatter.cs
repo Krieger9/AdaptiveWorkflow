@@ -46,8 +46,14 @@ public static class CollaborationContextFormatter
         sb.AppendLine(
             "  updatedAt: "
             + (profile.UpdatedAt is { } at ? at.ToString("O") : "(never — seeded default)"));
-        sb.AppendLine("  document:");
-        sb.AppendLine(Indent(profile.Document.Trim()));
+        sb.AppendLine();
+        sb.AppendLine(
+            "The raw markdown document follows between the BEGIN/END markers. Return ONLY the "
+            + "updated markdown itself — do NOT wrap it in a 'document:' key, do NOT indent it, and "
+            + "do NOT include the tier/version/source/updatedAt metadata lines above.");
+        sb.AppendLine("--- BEGIN DOCUMENT ---");
+        sb.AppendLine(profile.Document.Trim());
+        sb.AppendLine("--- END DOCUMENT ---");
         return sb.ToString().TrimEnd();
     }
 

@@ -5,11 +5,10 @@ using Microsoft.Agents.AI;
 namespace AdaptiveTeamBuilderSvc;
 
 /// <summary>
-/// Foundry-backed advisor. Falls back to <see cref="StubCollaborationAdvisor"/> on failure.
+/// Foundry-backed advisor. When Foundry cannot provide advice, the client keeps its default view.
 /// </summary>
 public sealed class AgentCollaborationAdvisor(
     FoundryCollaborationAgents agents,
-    StubCollaborationAdvisor fallback,
     ICollaborationAgentTranscriptLogger transcripts,
     ILogger<AgentCollaborationAdvisor> logger) : ICollaborationAdvisor
 {
@@ -38,21 +37,20 @@ public sealed class AgentCollaborationAdvisor(
                 promptPreview,
                 session: null,
                 serializerOptions: SerializerOptions,
-                options: null,
+                options: agents.CreateRunOptions(),
                 cancellationToken: cancellationToken);
 
             var suggestions = AdviseAgentResultMapper.ToSuggestions(agentResponse.Result);
             var preferredLayout = AdviseAgentResultMapper.ToPreferredLayout(agentResponse.Result);
             if (suggestions.Count == 0)
             {
-                logger.LogWarning(
-                    "Foundry advisor returned no applyable suggestions; using stub heuristics.");
-                var stub = fallback.Advise(request, profile) with { PromptPreview = promptPreview };
+                logger.LogInformation(
+                    "Foundry advisor returned no applicable suggestions; keeping the client default view.");
                 await transcripts.WriteAsync(
                     new CollaborationAgentTranscript
                     {
                         Agent = FoundryCollaborationAgents.AdvisorAgentName,
-                        Source = "stub-fallback",
+                        Source = "foundry",
                         Prompt = promptPreview,
                         RetrievedProfile = profile,
                         TurnContext = turnContext,
@@ -61,17 +59,17 @@ public sealed class AgentCollaborationAdvisor(
                         ResponseObject = new
                         {
                             foundryResult = agentResponse.Result,
-                            preferredLayout = stub.PreferredLayout,
-                            appliedSuggestions = stub.Suggestions,
+                            preferredLayout = (PreferredLayoutDto?)null,
+                            suggestions = Array.Empty<SuggestionDto>(),
                         },
                     },
                     cancellationToken);
-                return stub;
+                return new AdviseResponse(
+                    promptPreview,
+                    Array.Empty<SuggestionDto>(),
+                    PreferredLayout: null);
             }
 
-            preferredLayout = MergePreferredLayout(
-                preferredLayout,
-                StubCollaborationAdvisor.BuildPreferredLayout(request, profile));
             var response = new AdviseResponse(
                 promptPreview,
                 suggestions,
@@ -98,8 +96,7 @@ public sealed class AgentCollaborationAdvisor(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(ex, "Foundry advisor failed; falling back to stub heuristics.");
-            var stub = fallback.Advise(request, profile);
+            logger.LogError(ex, "Foundry advisor failed; keeping the client default view.");
             await transcripts.WriteAsync(
                 new CollaborationAgentTranscript
                 {
@@ -111,49 +108,16 @@ public sealed class AgentCollaborationAdvisor(
                     Events = request.Interactions,
                     ResponseObject = new
                     {
-                        preferredLayout = stub.PreferredLayout,
-                        appliedSuggestions = stub.Suggestions,
+                        preferredLayout = (PreferredLayoutDto?)null,
+                        suggestions = Array.Empty<SuggestionDto>(),
                     },
                     Error = ex.ToString(),
                 },
                 cancellationToken);
-            return stub;
+            return new AdviseResponse(
+                promptPreview,
+                Array.Empty<SuggestionDto>(),
+                PreferredLayout: null);
         }
-    }
-
-    /// <summary>
-    /// Prefer Foundry layout, but fill expandTopCount/expandBySignal from stub when the model
-    /// understood keep-top-subset in prose yet omitted the structured fields (expandAll=false only).
-    /// </summary>
-    private static PreferredLayoutDto MergePreferredLayout(
-        PreferredLayoutDto? fromAgent,
-        PreferredLayoutDto fromStub)
-    {
-        if (fromAgent is null)
-        {
-            return fromStub;
-        }
-
-        if (fromAgent.ExpandTopCount is not null && !string.IsNullOrWhiteSpace(fromAgent.ExpandBySignal))
-        {
-            return fromAgent with { ExpandAll = false };
-        }
-
-        if (fromStub.ExpandTopCount is not null && !string.IsNullOrWhiteSpace(fromStub.ExpandBySignal))
-        {
-            return fromAgent with
-            {
-                ExpandAll = false,
-                ExpandTopCount = fromStub.ExpandTopCount,
-                ExpandBySignal = fromStub.ExpandBySignal,
-                Rationale = string.IsNullOrWhiteSpace(fromAgent.Rationale)
-                    ? fromStub.Rationale
-                    : fromAgent.Rationale
-                      + " (filled expandTop from profile: "
-                      + $"{fromStub.ExpandTopCount} by {fromStub.ExpandBySignal})",
-            };
-        }
-
-        return fromAgent;
     }
 }

@@ -1,0 +1,386 @@
+{"kind":"deck","id":"pr/cl9waq","name":"Deck"}
+{"kind":"layout","layoutId":"f511d35f-2b82-4f94-a7f3-4437ddc24500","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"f536a8bd-1a4e-4f55-b93a-f1d0805ef386","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/juxa8k","slide":1,"title":"SYSTEM THEORY","textShapes":12}
+{"kind":"shape","id":"sh/fmxw7i9o","slide":1,"bbox":[0,0,18,720]}
+{"kind":"shape","id":"sh/gn6x0nq9","slide":1,"bbox":[72,64,140,30]}
+{"kind":"textbox","id":"sh/hofe9sru","slide":1,"text":"SYSTEM THEORY","textPreview":"SYSTEM THEORY","textChars":13,"textLines":1,"bbox":[82,64,120,30]}
+{"kind":"textbox","id":"sh/6h4vuds7","slide":1,"text":"Contextual Learning\nfor Adaptive Applications","textPreview":"Contextual Learning | for Adaptive Applications","textChars":45,"textLines":2,"bbox":[72,132,760,176]}
+{"kind":"textbox","id":"sh/7idw3i9s","slide":1,"text":"How observed behavior becomes evidence, durable beliefs, and controlled application changes","textPreview":"How observed behavior becomes evidence, durable beliefs, and controlled application changes","textChars":91,"textLines":1,"bbox":[76,332,700,92]}
+{"kind":"shape","id":"sh/sjmdwnqx","slide":1,"bbox":[858,92,330,460]}
+{"kind":"shape","id":"sh/tkve5sri","slide":1,"bbox":[894,132,48,48]}
+{"kind":"textbox","id":"sh/itkvqdsv","slide":1,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[894,132,48,48]}
+{"kind":"textbox","id":"sh/jedwzy9g","slide":1,"text":"Observe","textPreview":"Observe","textChars":7,"textLines":1,"bbox":[964,132,170,48]}
+{"kind":"shape","id":"sh/vqlwjutc","slide":1,"bbox":[918,180,0,46]}
+{"kind":"shape","id":"sh/apcfa9cr","slide":1,"bbox":[894,226,48,48]}
+{"kind":"textbox","id":"sh/xs3el4bi","slide":1,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[894,226,48,48]}
+{"kind":"textbox","id":"sh/wruxczux","slide":1,"text":"Interpret","textPreview":"Interpret","textChars":9,"textLines":1,"bbox":[964,226,170,48]}
+{"kind":"shape","id":"sh/julwneto","slide":1,"bbox":[918,274,0,46]}
+{"kind":"shape","id":"sh/itcfe9c3","slide":1,"bbox":[894,320,48,48]}
+{"kind":"textbox","id":"sh/5wnepobu","slide":1,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[894,320,48,48]}
+{"kind":"textbox","id":"sh/kvuxgju9","slide":1,"text":"Learn","textPreview":"Learn","textChars":5,"textLines":1,"bbox":[964,320,170,48]}
+{"kind":"shape","id":"sh/zy1wbad4","slide":1,"bbox":[918,368,0,46]}
+{"kind":"shape","id":"sh/yxsv2pcz","slide":1,"bbox":[894,414,48,48]}
+{"kind":"textbox","id":"sh/2tgzaxw7","slide":1,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[894,414,48,48]}
+{"kind":"textbox","id":"sh/3up0jids","slide":1,"text":"Adapt","textPreview":"Adapt","textChars":5,"textLines":1,"bbox":[964,414,170,48]}
+{"kind":"textbox","id":"sh/4fyhcned","slide":1,"text":"Theory, operating model, and current proof of concept","textPreview":"Theory, operating model, and current proof of concept","textChars":53,"textLines":1,"bbox":[76,612,720,28]}
+{"kind":"notes","id":"nt/juxa8k","slide":1,"text":"Open by separating this deck from the live demonstration. This presentation explains the operating model: what the system observes, how it reasons, what it remembers, and how that becomes a controlled application behavior."}
+{"kind":"slide","id":"sl/zx7wwh","slide":2,"title":"02","textShapes":14}
+{"kind":"textbox","id":"sh/7algvyl0","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[64,35,44,28]}
+{"kind":"textbox","id":"sh/8buho3ml","slide":2,"text":"CORE MODEL","textPreview":"CORE MODEL","textChars":10,"textLines":1,"bbox":[116,35,700,28]}
+{"kind":"textbox","id":"sh/tc3yx83q","slide":2,"text":"The model separates observations, evidence, beliefs, and adaptations","textPreview":"The model separates observations, evidence, beliefs, and adaptations","textChars":68,"textLines":1,"bbox":[64,73,1152,90]}
+{"kind":"shape","id":"sh/udczqd4b","slide":2,"bbox":[64,171,1152,0]}
+{"kind":"shape","id":"sh/ve5gzilw","slide":2,"bbox":[64,230,230,250]}
+{"kind":"textbox","id":"sh/gfehs3mh","slide":2,"text":"OBSERVATION","textPreview":"OBSERVATION","textChars":11,"textLines":1,"bbox":[84,252,190,26]}
+{"kind":"textbox","id":"sh/hgny1832","slide":2,"text":"A user action occurred in a known application context.","textPreview":"A user action occurred in a known application context.","textChars":54,"textLines":1,"bbox":[84,302,190,118]}
+{"kind":"shape","id":"sh/ahsfe947","slide":2,"bbox":[304,338,40,24]}
+{"kind":"shape","id":"sh/bi1gnels","slide":2,"bbox":[354,230,230,250]}
+{"kind":"textbox","id":"sh/7qdszu1k","slide":2,"text":"EVIDENCE","textPreview":"EVIDENCE","textChars":8,"textLines":1,"bbox":[374,252,190,26]}
+{"kind":"textbox","id":"sh/6p4rqp0z","slide":2,"text":"A pattern or relationship is supported by one or more episodes.","textPreview":"A pattern or relationship is supported by one or more episodes.","textChars":63,"textLines":1,"bbox":[374,302,190,118]}
+{"kind":"shape","id":"sh/tcva14ja","slide":2,"bbox":[594,338,40,24]}
+{"kind":"shape","id":"sh/sbm9szi5","slide":2,"bbox":[644,230,230,250]}
+{"kind":"textbox","id":"sh/jmd8va18","slide":2,"text":"BELIEF","textPreview":"BELIEF","textChars":6,"textLines":1,"bbox":[664,252,190,26]}
+{"kind":"textbox","id":"sh/ilkrm50n","slide":2,"text":"The system’s current, revisable explanation of the user.","textPreview":"The system’s current, revisable explanation of the user.","textChars":56,"textLines":1,"bbox":[664,302,190,118]}
+{"kind":"shape","id":"sh/5ovaxkje","slide":2,"bbox":[884,338,40,24]}
+{"kind":"shape","id":"sh/knm9ofit","slide":2,"bbox":[934,230,230,250]}
+{"kind":"textbox","id":"sh/vit8ra1c","slide":2,"text":"ADAPTATION","textPreview":"ADAPTATION","textChars":10,"textLines":1,"bbox":[954,252,190,26]}
+{"kind":"textbox","id":"sh/ahkri5kr","slide":2,"text":"A bounded change the application knows how to apply.","textPreview":"A bounded change the application knows how to apply.","textChars":52,"textLines":1,"bbox":[954,302,190,118]}
+{"kind":"textbox","id":"sh/yd0ra54j","slide":2,"text":"The discipline matters: an action is not automatically a preference, and a preference is not automatically permission to change the interface.","textPreview":"The discipline matters: an action is not automatically a preference, and a preference is not automatically permission to change the inter...","textChars":142,"textLines":1,"bbox":[96,520,1088,72]}
+{"kind":"textbox","id":"sh/ze9s3al4","slide":2,"text":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textPreview":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textChars":41,"textLines":1,"bbox":[64,682,500,18]}
+{"kind":"textbox","id":"sh/0f2tcfmp","slide":2,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[1160,682,56,18]}
+{"kind":"notes","id":"nt/zx7wwh","slide":2,"text":"Emphasize the separation of concerns. This keeps the system from treating every click as truth or letting an AI response directly manipulate the interface.\n\n[Sources]\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilder.Data/Entities/Interaction.cs\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilder.Data/Entities/Belief.cs\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/AdaptationApprovalPolicy.cs\n[/Sources]"}
+{"kind":"slide","id":"sl/8i45ur","slide":3,"title":"03","textShapes":12}
+{"kind":"textbox","id":"sh/natkbm58","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[64,35,44,28]}
+{"kind":"textbox","id":"sh/ob2l4r6t","slide":3,"text":"CONTEXT","textPreview":"CONTEXT","textChars":7,"textLines":1,"bbox":[116,35,700,28]}
+{"kind":"textbox","id":"sh/9cb2dwne","slide":3,"text":"The application supplies meaning the AI cannot infer alone","textPreview":"The application supplies meaning the AI cannot infer alone","textChars":58,"textLines":1,"bbox":[64,73,1152,90]}
+{"kind":"shape","id":"sh/ad4361oz","slide":3,"bbox":[64,171,1152,0]}
+{"kind":"shape","id":"sh/bydkf654","slide":3,"bbox":[64,214,330,310]}
+{"kind":"shape","id":"sh/wzml8b6p","slide":3,"bbox":[64,214,6,310]}
+{"kind":"textbox","id":"sh/x0v21gna","slide":3,"text":"Application identity","textPreview":"Application identity","textChars":20,"textLines":1,"bbox":[88,232,288,34]}
+{"kind":"textbox","id":"sh/y143a1ov","slide":3,"text":"Which product and business domain?\n\nWhich surface and workflow step?\n\nWhat does the user believe they are doing?","textPreview":"Which product and business domain? |  | Which surface and workflow step? |  | What does the user believe they are doing?","textChars":112,"textLines":5,"bbox":[88,272,288,238]}
+{"kind":"shape","id":"sh/j2dk365g","slide":3,"bbox":[475,214,330,310]}
+{"kind":"shape","id":"sh/be987mhk","slide":3,"bbox":[475,214,6,310]}
+{"kind":"textbox","id":"sh/qd0reh0z","slide":3,"text":"Visible state","textPreview":"Visible state","textChars":13,"textLines":1,"bbox":[499,232,288,34]}
+{"kind":"textbox","id":"sh/dgrq9wzq","slide":3,"text":"Which view is active?\n\nWhat controls and options are visible?\n\nWhich entities and values are present?","textPreview":"Which view is active? |  | What controls and options are visible? |  | Which entities and values are present?","textChars":101,"textLines":5,"bbox":[499,272,288,238]}
+{"kind":"shape","id":"sh/cfi9gri5","slide":3,"bbox":[886,214,330,310]}
+{"kind":"shape","id":"sh/3a983mh8","slide":3,"bbox":[886,214,6,310]}
+{"kind":"textbox","id":"sh/29grah03","slide":3,"text":"Interaction semantics","textPreview":"Interaction semantics","textChars":21,"textLines":1,"bbox":[910,232,288,34]}
+{"kind":"textbox","id":"sh/pcrq5wze","slide":3,"text":"What does expand, select, compare, or change-view mean here?\n\nWhich actions are reversible or consequential?","textPreview":"What does expand, select, compare, or change-view mean here? |  | Which actions are reversible or consequential?","textChars":108,"textLines":3,"bbox":[910,272,288,238]}
+{"kind":"textbox","id":"sh/obi9crit","slide":3,"text":"Without this contract, the model sees clicks. With it, the model can reason about intent.","textPreview":"Without this contract, the model sees clicks. With it, the model can reason about intent.","textChars":89,"textLines":1,"bbox":[160,562,960,48]}
+{"kind":"textbox","id":"sh/n6tsf6hs","slide":3,"text":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textPreview":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textChars":41,"textLines":1,"bbox":[64,682,500,18]}
+{"kind":"textbox","id":"sh/m5krm1g7","slide":3,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[1160,682,56,18]}
+{"kind":"notes","id":"nt/8i45ur","slide":3,"text":"Context is designed into the application. The same gesture can mean different things on different surfaces, so the app identifies itself, describes the current workflow, supplies visible data, and defines the semantics of interactions.\n\n[Sources]\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderUI/src/collaboration/assembleSurfaceContext.ts\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderUI/src/collaboration/assembleSelectContractContext.ts\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/CollaborationContextFormatter.cs\n[/Sources]"}
+{"kind":"slide","id":"sl/c7m79u","slide":4,"title":"04","textShapes":13}
+{"kind":"textbox","id":"sh/a1kjqpwj","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[64,35,44,28]}
+{"kind":"textbox","id":"sh/x4b2l4fa","slide":4,"text":"EVENT ACCUMULATION","textPreview":"EVENT ACCUMULATION","textChars":18,"textLines":1,"bbox":[116,35,700,28]}
+{"kind":"textbox","id":"sh/w321szep","slide":4,"text":"Individual UI events are assembled into decision episodes","textPreview":"Individual UI events are assembled into decision episodes","textChars":57,"textLines":1,"bbox":[64,73,1152,90]}
+{"kind":"shape","id":"sh/j6tknexg","slide":4,"bbox":[64,171,1152,0]}
+{"kind":"shape","id":"sh/y5kju9wv","slide":4,"bbox":[68,230,186,62]}
+{"kind":"textbox","id":"sh/lsv2povm","slide":4,"text":"Expand A","textPreview":"Expand A","textChars":8,"textLines":1,"bbox":[78,230,166,62]}
+{"kind":"shape","id":"sh/k721wje1","slide":4,"bbox":[256,249,34,24]}
+{"kind":"shape","id":"sh/7udkredc","slide":4,"bbox":[294,230,186,62]}
+{"kind":"textbox","id":"sh/6t4jy9wr","slide":4,"text":"Collapse A","textPreview":"Collapse A","textChars":10,"textLines":1,"bbox":[304,230,166,62]}
+{"kind":"shape","id":"sh/kvytk7ah","slide":4,"bbox":[482,249,34,24]}
+{"kind":"shape","id":"sh/lw7udsr2","slide":4,"bbox":[520,230,186,62]}
+{"kind":"textbox","id":"sh/y9gbixsr","slide":4,"text":"Expand B","textPreview":"Expand B","textChars":8,"textLines":1,"bbox":[530,230,166,62]}
+{"kind":"shape","id":"sh/zupcb29w","slide":4,"bbox":[708,249,34,24]}
+{"kind":"shape","id":"sh/8zyto7qt","slide":4,"bbox":[746,230,186,62]}
+{"kind":"textbox","id":"sh/907uhcre","slide":4,"text":"Choose graph","textPreview":"Choose graph","textChars":12,"textLines":1,"bbox":[756,230,166,62]}
+{"kind":"shape","id":"sh/mxgbmx8n","slide":4,"bbox":[934,249,34,24]}
+{"kind":"shape","id":"sh/7ypcf298","slide":4,"bbox":[972,230,186,62]}
+{"kind":"textbox","id":"sh/w3idsrqp","slide":4,"text":"Select contract","textPreview":"Select contract","textChars":15,"textLines":1,"bbox":[982,230,166,62]}
+{"kind":"shape","id":"sh/h4rulcra","slide":4,"bbox":[148,354,984,132]}
+{"kind":"textbox","id":"sh/5knu5cje","slide":4,"text":"DECISION EPISODE","textPreview":"DECISION EPISODE","textChars":16,"textLines":1,"bbox":[178,372,200,26]}
+{"kind":"textbox","id":"sh/4jetc7it","slide":4,"text":"The buffered exploration, reversals, timing, visible alternatives, and final action are submitted together.","textPreview":"The buffered exploration, reversals, timing, visible alternatives, and final action are submitted together.","textChars":107,"textLines":1,"bbox":[178,409,900,50]}
+{"kind":"textbox","id":"sh/3i5c3218","slide":4,"text":"A coherent episode is more informative than five disconnected events.","textPreview":"A coherent episode is more informative than five disconnected events.","textChars":69,"textLines":1,"bbox":[188,535,904,40]}
+{"kind":"textbox","id":"sh/ihwbah03","slide":4,"text":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textPreview":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textChars":41,"textLines":1,"bbox":[64,682,500,18]}
+{"kind":"textbox","id":"sh/do7u9wjq","slide":4,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[1160,682,56,18]}
+{"kind":"notes","id":"nt/c7m79u","slide":4,"text":"The UI does not ask the AI to interpret each micro-event independently. Exploration is buffered, then flushed at a meaningful boundary such as a view change or final selection. That gives the system a decision episode.\n\n[Sources]\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderUI/src/collaboration/observationBuffer.ts\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderUI/src/collaboration/useSurfaceObservations.ts\n[/Sources]"}
+{"kind":"slide","id":"sl/zwpznr","slide":5,"title":"05","textShapes":17}
+{"kind":"textbox","id":"sh/5k7y5gjy","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[64,35,44,28]}
+{"kind":"textbox","id":"sh/ixgzu10n","slide":5,"text":"PREPROCESSING","textPreview":"PREPROCESSING","textChars":13,"textLines":1,"bbox":[116,35,700,28]}
+{"kind":"textbox","id":"sh/jipg361s","slide":5,"text":"Deterministic analysis prepares evidence before AI reasoning","textPreview":"Deterministic analysis prepares evidence before AI reasoning","textChars":60,"textLines":1,"bbox":[64,73,1152,90]}
+{"kind":"shape","id":"sh/snyh0bip","slide":5,"bbox":[64,171,1152,0]}
+{"kind":"shape","id":"sh/tori9gja","slide":5,"bbox":[64,220,210,98]}
+{"kind":"textbox","id":"sh/6lgzy10j","slide":5,"text":"Reversals","textPreview":"Reversals","textChars":9,"textLines":1,"bbox":[80,240,178,34]}
+{"kind":"textbox","id":"sh/7mp07614","slide":5,"text":"undo / redo","textPreview":"undo / redo","textChars":11,"textLines":1,"bbox":[80,278,178,22]}
+{"kind":"shape","id":"sh/8reh4ri5","slide":5,"bbox":[294,220,210,98]}
+{"kind":"textbox","id":"sh/9snyxcjq","slide":5,"text":"Action timing","textPreview":"Action timing","textChars":13,"textLines":1,"bbox":[310,240,178,34]}
+{"kind":"textbox","id":"sh/p43yxsfy","slide":5,"text":"fast / deliberate","textPreview":"fast / deliberate","textChars":17,"textLines":1,"bbox":[310,278,178,22]}
+{"kind":"shape","id":"sh/o3uhonyd","slide":5,"bbox":[524,220,210,98]}
+{"kind":"textbox","id":"sh/32lgv2xs","slide":5,"text":"Comparison pattern","textPreview":"Comparison pattern","textChars":18,"textLines":1,"bbox":[540,240,178,34]}
+{"kind":"textbox","id":"sh/2hsfmxg7","slide":5,"text":"what was contrasted","textPreview":"what was contrasted","textChars":19,"textLines":1,"bbox":[540,278,178,22]}
+{"kind":"shape","id":"sh/d83y1cfu","slide":5,"bbox":[754,220,210,98]}
+{"kind":"textbox","id":"sh/c7uhs7y9","slide":5,"text":"Value ranking","textPreview":"Value ranking","textChars":13,"textLines":1,"bbox":[770,240,178,34]}
+{"kind":"textbox","id":"sh/b6lgz2xo","slide":5,"text":"where entities rank","textPreview":"where entities rank","textChars":19,"textLines":1,"bbox":[770,278,178,22]}
+{"kind":"shape","id":"sh/q5czqxg3","slide":5,"bbox":[984,220,210,98]}
+{"kind":"textbox","id":"sh/lcny5cfq","slide":5,"text":"Cross-signal checks","textPreview":"Cross-signal checks","textChars":19,"textLines":1,"bbox":[1000,240,178,34]}
+{"kind":"textbox","id":"sh/0behw7yl","slide":5,"text":"which explanation survives","textPreview":"which explanation survives","textChars":26,"textLines":1,"bbox":[1000,278,178,22]}
+{"kind":"shape","id":"sh/kfm1sv6h","slide":5,"bbox":[246,365,760,24]}
+{"kind":"shape","id":"sh/lgvi10n2","slide":5,"bbox":[275,420,730,122]}
+{"kind":"textbox","id":"sh/yd4jqlor","slide":5,"text":"STRUCTURED EVIDENCE PACKET","textPreview":"STRUCTURED EVIDENCE PACKET","textChars":26,"textLines":1,"bbox":[305,438,670,26]}
+{"kind":"textbox","id":"sh/jed0zq5w","slide":5,"text":"The AI receives computed facts and relationships—not just a raw event stream.","textPreview":"The AI receives computed facts and relationships—not just a raw event stream.","textChars":77,"textLines":1,"bbox":[305,475,670,42]}
+{"kind":"textbox","id":"sh/8jm1wv6t","slide":5,"text":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textPreview":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textChars":41,"textLines":1,"bbox":[64,682,500,18]}
+{"kind":"textbox","id":"sh/tkvi50ne","slide":5,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[1160,682,56,18]}
+{"kind":"notes","id":"nt/zwpznr","slide":5,"text":"The application performs deterministic calculations first: reversals, timing, comparison behavior, and ranking against visible business values. The AI’s role is interpretation, not arithmetic or event reconstruction.\n\n[Sources]\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/CollaborationContextFormatter.cs\n[/Sources]"}
+{"kind":"slide","id":"sl/e9gliy","slide":6,"title":"06","textShapes":12}
+{"kind":"textbox","id":"sh/rq5knetc","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[64,35,44,28]}
+{"kind":"textbox","id":"sh/crelwjax","slide":6,"text":"REASONING","textPreview":"REASONING","textChars":9,"textLines":1,"bbox":[116,35,700,28]}
+{"kind":"textbox","id":"sh/ds72pori","slide":6,"text":"The agent evaluates competing explanations","textPreview":"The agent evaluates competing explanations","textChars":42,"textLines":1,"bbox":[64,73,1152,90]}
+{"kind":"shape","id":"sh/2lwjq9sv","slide":6,"bbox":[64,171,1152,0]}
+{"kind":"shape","id":"sh/3m5kjetg","slide":6,"bbox":[64,214,350,330]}
+{"kind":"shape","id":"sh/4nelsja1","slide":6,"bbox":[64,214,6,330]}
+{"kind":"textbox","id":"sh/pon2lobm","slide":6,"text":"1  Generate hypotheses","textPreview":"1  Generate hypotheses","textChars":22,"textLines":1,"bbox":[88,232,308,34]}
+{"kind":"textbox","id":"sh/uxcjmpsz","slide":6,"text":"Examples:\n• prefers graph view\n• expands for detail\n• focuses on highest-value options\n• is correcting an accidental action","textPreview":"Examples: | • prefers graph view | • expands for detail | • focuses on highest-value options | • is correcting an accidental action","textChars":123,"textLines":5,"bbox":[88,272,308,258]}
+{"kind":"shape","id":"sh/fylkfut4","slide":6,"bbox":[465,214,350,330]}
+{"kind":"shape","id":"sh/ni9cj610","slide":6,"bbox":[465,214,6,330]}
+{"kind":"textbox","id":"sh/2h0vq1kf","slide":6,"text":"2  Weigh evidence","textPreview":"2  Weigh evidence","textChars":17,"textLines":1,"bbox":[489,232,308,34]}
+{"kind":"textbox","id":"sh/pkbulgj6","slide":6,"text":"Does the explanation fit the action sequence, timing, visible alternatives, current beliefs, and prior episodes?","textPreview":"Does the explanation fit the action sequence, timing, visible alternatives, current beliefs, and prior episodes?","textChars":112,"textLines":1,"bbox":[489,272,308,258]}
+{"kind":"shape","id":"sh/ojidsb2l","slide":6,"bbox":[866,214,350,330]}
+{"kind":"shape","id":"sh/b6twnq1c","slide":6,"bbox":[866,214,6,330]}
+{"kind":"textbox","id":"sh/alkvulkr","slide":6,"text":"3  Update cautiously","textPreview":"3  Update cautiously","textChars":20,"textLines":1,"bbox":[890,232,308,34]}
+{"kind":"textbox","id":"sh/x8bep0j2","slide":6,"text":"Strengthen, weaken, revise, or leave the belief unchanged. Record what supports it and what would disprove it.","textPreview":"Strengthen, weaken, revise, or leave the belief unchanged. Record what supports it and what would disprove it.","textChars":110,"textLines":1,"bbox":[890,272,308,258]}
+{"kind":"textbox","id":"sh/c72dwv2x","slide":6,"text":"The output is a revisable explanation—not a declaration of user intent.","textPreview":"The output is a revisable explanation—not a declaration of user intent.","textChars":71,"textLines":1,"bbox":[190,577,900,38]}
+{"kind":"textbox","id":"sh/rapcbmls","slide":6,"text":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textPreview":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textChars":41,"textLines":1,"bbox":[64,682,500,18]}
+{"kind":"textbox","id":"sh/qpgvihkn","slide":6,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[1160,682,56,18]}
+{"kind":"notes","id":"nt/e9gliy","slide":6,"text":"This is the closest view of what the agent is ‘thinking.’ It compares competing explanations, weighs them against the current episode and memory, and produces a belief with explicit uncertainty and falsifiability.\n\n[Sources]\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/AgentCollaborationProfileUpdater.cs\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/BeliefDocumentFormat.cs\n[/Sources]"}
+{"kind":"slide","id":"sl/gx9sus","slide":7,"title":"07","textShapes":23}
+{"kind":"textbox","id":"sh/fulkr29g","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[64,35,44,28]}
+{"kind":"textbox","id":"sh/gvul07a1","slide":7,"text":"DATA-AWARE LEARNING","textPreview":"DATA-AWARE LEARNING","textChars":19,"textLines":1,"bbox":[116,35,700,28]}
+{"kind":"textbox","id":"sh/1wn2tcrm","slide":7,"text":"Business values reveal what may be driving behavior","textPreview":"Business values reveal what may be driving behavior","textChars":51,"textLines":1,"bbox":[64,73,1152,90]}
+{"kind":"shape","id":"sh/65c3uxsz","slide":7,"bbox":[64,171,1152,0]}
+{"kind":"shape","id":"sh/r6lkn29k","slide":7,"bbox":[64,204,120,30]}
+{"kind":"textbox","id":"sh/s7ulw7ap","slide":7,"text":"ILLUSTRATIVE","textPreview":"ILLUSTRATIVE","textChars":12,"textLines":1,"bbox":[74,204,100,30]}
+{"kind":"textbox","id":"sh/t832pcra","slide":7,"text":"VISIBLE OPTIONS","textPreview":"VISIBLE OPTIONS","textChars":15,"textLines":1,"bbox":[64,252,500,24]}
+{"kind":"textbox","id":"sh/a1w36hs3","slide":7,"text":"VALUE","textPreview":"VALUE","textChars":5,"textLines":1,"bbox":[612,252,160,24]}
+{"kind":"textbox","id":"sh/b25kzm9o","slide":7,"text":"RANK","textPreview":"RANK","textChars":4,"textLines":1,"bbox":[806,252,120,24]}
+{"kind":"textbox","id":"sh/ni183mdk","slide":7,"text":"ACTION","textPreview":"ACTION","textChars":6,"textLines":1,"bbox":[990,252,180,24]}
+{"kind":"shape","id":"sh/mhs7ahcf","slide":7,"bbox":[64,285,1120,58]}
+{"kind":"textbox","id":"sh/9k3q5wvq","slide":7,"text":"Contract A","textPreview":"Contract A","textChars":10,"textLines":1,"bbox":[84,285,430,58]}
+{"kind":"textbox","id":"sh/8japcru5","slide":7,"text":"$1.2M","textPreview":"$1.2M","textChars":5,"textLines":1,"bbox":[612,285,160,58]}
+{"kind":"textbox","id":"sh/vml87mdw","slide":7,"text":"#1","textPreview":"#1","textChars":2,"textLines":1,"bbox":[806,285,120,58]}
+{"kind":"shape","id":"sh/alcre1cb","slide":7,"bbox":[982,299,170,30]}
+{"kind":"textbox","id":"sh/xo3q9wv2","slide":7,"text":"Expanded","textPreview":"Expanded","textChars":8,"textLines":1,"bbox":[992,299,150,30]}
+{"kind":"shape","id":"sh/wnu9gruh","slide":7,"bbox":[64,361,1120,58]}
+{"kind":"textbox","id":"sh/jql8b6ds","slide":7,"text":"Contract B","textPreview":"Contract B","textChars":10,"textLines":1,"bbox":[84,361,430,58]}
+{"kind":"textbox","id":"sh/ipcri1c7","slide":7,"text":"$740K","textPreview":"$740K","textChars":5,"textLines":1,"bbox":[612,361,160,58]}
+{"kind":"textbox","id":"sh/eh0jqp0r","slide":7,"text":"#2","textPreview":"#2","textChars":2,"textLines":1,"bbox":[806,361,120,58]}
+{"kind":"shape","id":"sh/fi9kzu1c","slide":7,"bbox":[982,375,170,30]}
+{"kind":"textbox","id":"sh/0ji1szix","slide":7,"text":"Collapsed","textPreview":"Collapsed","textChars":9,"textLines":1,"bbox":[992,375,150,30]}
+{"kind":"shape","id":"sh/1kr214ji","slide":7,"bbox":[64,437,1120,58]}
+{"kind":"textbox","id":"sh/qtgjmp0v","slide":7,"text":"Contract C","textPreview":"Contract C","textChars":10,"textLines":1,"bbox":[84,437,430,58]}
+{"kind":"textbox","id":"sh/rupkvu1g","slide":7,"text":"$310K","textPreview":"$310K","textChars":5,"textLines":1,"bbox":[612,437,160,58]}
+{"kind":"textbox","id":"sh/svy1ozil","slide":7,"text":"#3","textPreview":"#3","textChars":2,"textLines":1,"bbox":[806,437,120,58]}
+{"kind":"shape","id":"sh/dwr2x4j6","slide":7,"bbox":[982,451,170,30]}
+{"kind":"textbox","id":"sh/apk3yt0z","slide":7,"text":"Collapsed","textPreview":"Collapsed","textChars":9,"textLines":1,"bbox":[992,451,150,30]}
+{"kind":"textbox","id":"sh/bqtk7e1k","slide":7,"text":"Across episodes, the system can test whether ‘highest value’ predicts the user’s action better than position, label, or habit.","textPreview":"Across episodes, the system can test whether ‘highest value’ predicts the user’s action better than position, label, or habit.","textChars":126,"textLines":1,"bbox":[100,548,1080,62]}
+{"kind":"textbox","id":"sh/lkvmxs3m","slide":7,"text":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textPreview":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textChars":41,"textLines":1,"bbox":[64,682,500,18]}
+{"kind":"textbox","id":"sh/kjm54n21","slide":7,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[1160,682,56,18]}
+{"kind":"notes","id":"nt/gx9sus","slide":7,"text":"Use the highest-value-contract example. The system receives the values that were visible when the action occurred, calculates rank, and tests whether value is consistently predictive. The numbers shown here are illustrative, not production data.\n\n[Sources]\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderUI/src/collaboration/assembleSelectContractContext.ts\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/CollaborationContextFormatter.cs\n[/Sources]"}
+{"kind":"slide","id":"sl/78tc7b","slide":8,"title":"08","textShapes":15}
+{"kind":"textbox","id":"sh/7a5w7m1s","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[64,35,44,28]}
+{"kind":"textbox","id":"sh/8bed0rix","slide":8,"text":"BELIEF LIFECYCLE","textPreview":"BELIEF LIFECYCLE","textChars":16,"textLines":1,"bbox":[116,35,700,28]}
+{"kind":"textbox","id":"sh/tcne9cji","slide":8,"text":"Learning occurs through accumulation, contradiction, and revision","textPreview":"Learning occurs through accumulation, contradiction, and revision","textChars":65,"textLines":1,"bbox":[64,73,1152,90]}
+{"kind":"shape","id":"sh/y5wvux0v","slide":8,"bbox":[64,171,1152,0]}
+{"kind":"shape","id":"sh/j65w321g","slide":8,"bbox":[64,245,250,170]}
+{"kind":"shape","id":"sh/k7edw7i1","slide":8,"bbox":[64,245,250,8]}
+{"kind":"textbox","id":"sh/l8ne5cjm","slide":8,"text":"NOTICED","textPreview":"NOTICED","textChars":7,"textLines":1,"bbox":[84,276,210,24]}
+{"kind":"textbox","id":"sh/ahcvqx0z","slide":8,"text":"A possible signal appears","textPreview":"A possible signal appears","textChars":25,"textLines":1,"bbox":[88,320,202,62]}
+{"kind":"shape","id":"sh/b2lwz21k","slide":8,"bbox":[317,318,30,24]}
+{"kind":"shape","id":"sh/fq9wnuts","slide":8,"bbox":[352,245,250,170]}
+{"kind":"shape","id":"sh/ep0vups7","slide":8,"bbox":[352,245,250,8]}
+{"kind":"textbox","id":"sh/1srep4by","slide":8,"text":"TENTATIVE","textPreview":"TENTATIVE","textChars":9,"textLines":1,"bbox":[372,276,210,24]}
+{"kind":"textbox","id":"sh/0ridwzad","slide":8,"text":"Repeated, but alternatives remain","textPreview":"Repeated, but alternatives remain","textChars":33,"textLines":1,"bbox":[376,320,202,62]}
+{"kind":"shape","id":"sh/nutwreto","slide":8,"bbox":[605,318,30,24]}
+{"kind":"shape","id":"sh/2t0vy9s3","slide":8,"bbox":[640,245,250,170]}
+{"kind":"shape","id":"sh/pwbet4bu","slide":8,"bbox":[640,245,250,8]}
+{"kind":"textbox","id":"sh/ov2d0za9","slide":8,"text":"WORKING THEORY","textPreview":"WORKING THEORY","textChars":14,"textLines":1,"bbox":[660,276,210,24]}
+{"kind":"textbox","id":"sh/3ypcfatk","slide":8,"text":"Predicts behavior across episodes","textPreview":"Predicts behavior across episodes","textChars":33,"textLines":1,"bbox":[664,320,202,62]}
+{"kind":"shape","id":"sh/ixgvm5sz","slide":8,"bbox":[893,318,30,24]}
+{"kind":"shape","id":"sh/6tozudcn","slide":8,"bbox":[928,245,250,170]}
+{"kind":"shape","id":"sh/7uxg3id8","slide":8,"bbox":[928,245,250,8]}
+{"kind":"textbox","id":"sh/8f6hwnut","slide":8,"text":"SETTLED","textPreview":"SETTLED","textChars":7,"textLines":1,"bbox":[948,276,210,24]}
+{"kind":"textbox","id":"sh/tgfy5sby","slide":8,"text":"Strong and stable evidence","textPreview":"Strong and stable evidence","textChars":26,"textLines":1,"bbox":[952,320,202,62]}
+{"kind":"shape","id":"sh/yp4fqdcb","slide":8,"bbox":[216,465,848,94]}
+{"kind":"textbox","id":"sh/jqdgzydw","slide":8,"text":"CONTRADICTORY EVIDENCE","textPreview":"CONTRADICTORY EVIDENCE","textChars":22,"textLines":1,"bbox":[246,479,788,22]}
+{"kind":"textbox","id":"sh/krmxs3uh","slide":8,"text":"can weaken, revise, split, or retire a belief at any stage","textPreview":"can weaken, revise, split, or retire a belief at any stage","textChars":58,"textLines":1,"bbox":[246,509,788,30]}
+{"kind":"textbox","id":"sh/lsvy18v2","slide":8,"text":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textPreview":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textChars":41,"textLines":1,"bbox":[64,682,500,18]}
+{"kind":"textbox","id":"sh/al4fmtcf","slide":8,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[1160,682,56,18]}
+{"kind":"notes","id":"nt/78tc7b","slide":8,"text":"Beliefs do not merely accumulate confidence. New episodes can contradict earlier conclusions. The agent can revise the wording, reduce conviction, distinguish contexts, or remove a belief when it no longer explains behavior.\n\n[Sources]\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilder.Data/Entities/Belief.cs\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/BeliefDocumentFormat.cs\n[/Sources]"}
+{"kind":"slide","id":"sl/3ue1v7","slide":9,"title":"09","textShapes":18}
+{"kind":"textbox","id":"sh/xkjm58zi","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[64,35,44,28]}
+{"kind":"textbox","id":"sh/ah83utgr","slide":9,"text":"MEMORY","textPreview":"MEMORY","textChars":6,"textLines":1,"bbox":[116,35,700,28]}
+{"kind":"textbox","id":"sh/bih43yhc","slide":9,"text":"Short-term memory detects patterns; the profile preserves conclusions","textPreview":"Short-term memory detects patterns; the profile preserves conclusions","textChars":69,"textLines":1,"bbox":[64,73,1152,90]}
+{"kind":"shape","id":"sh/kna503yt","slide":9,"bbox":[64,171,1152,0]}
+{"kind":"shape","id":"sh/l8jm98ze","slide":9,"bbox":[64,220,520,338]}
+{"kind":"textbox","id":"sh/ylsnytgn","slide":9,"text":"RECENT DECISION DIGESTS","textPreview":"RECENT DECISION DIGESTS","textChars":23,"textLines":1,"bbox":[94,244,460,28]}
+{"kind":"textbox","id":"sh/jm147yh8","slide":9,"text":"A compact sequence of recent episodes","textPreview":"A compact sequence of recent episodes","textChars":37,"textLines":1,"bbox":[94,288,460,34]}
+{"kind":"shape","id":"sh/8bu54ny5","slide":9,"bbox":[96,352,18,18]}
+{"kind":"textbox","id":"sh/tc3mdsza","slide":9,"text":"What happened","textPreview":"What happened","textChars":13,"textLines":1,"bbox":[128,340,400,38]}
+{"kind":"shape","id":"sh/lg76hw7i","slide":9,"bbox":[96,394,18,18]}
+{"kind":"textbox","id":"sh/kfy5orqx","slide":9,"text":"What data was visible","textPreview":"What data was visible","textChars":21,"textLines":1,"bbox":[128,382,400,38]}
+{"kind":"shape","id":"sh/zepofmpc","slide":9,"bbox":[96,436,18,18]}
+{"kind":"textbox","id":"sh/ydgnmh8r","slide":9,"text":"What evidence was derived","textPreview":"What evidence was derived","textChars":25,"textLines":1,"bbox":[128,424,400,38]}
+{"kind":"shape","id":"sh/9kr6lw7e","slide":9,"bbox":[96,478,18,18]}
+{"kind":"textbox","id":"sh/8ji5sbqt","slide":9,"text":"What the advisor returned","textPreview":"What the advisor returned","textChars":25,"textLines":1,"bbox":[128,466,400,38]}
+{"kind":"shape","id":"sh/7i9oj6po","slide":9,"bbox":[603,374,70,24]}
+{"kind":"shape","id":"sh/mh0nq183","slide":9,"bbox":[696,220,520,338]}
+{"kind":"textbox","id":"sh/ponm9c7a","slide":9,"text":"DURABLE BELIEF PROFILE","textPreview":"DURABLE BELIEF PROFILE","textChars":22,"textLines":1,"bbox":[726,244,460,28]}
+{"kind":"textbox","id":"sh/one5g7qp","slide":9,"text":"A structured, revisable user model","textPreview":"A structured, revisable user model","textChars":34,"textLines":1,"bbox":[726,288,460,34]}
+{"kind":"shape","id":"sh/gri5w7yl","slide":9,"bbox":[728,352,18,18]}
+{"kind":"textbox","id":"sh/1sr65cf6","slide":9,"text":"Belief statement","textPreview":"Belief statement","textChars":16,"textLines":1,"bbox":[760,340,400,38]}
+{"kind":"shape","id":"sh/e50nuxgf","slide":9,"bbox":[728,394,18,18]}
+{"kind":"textbox","id":"sh/fq9o32h0","slide":9,"text":"Conviction and tenure","textPreview":"Conviction and tenure","textChars":21,"textLines":1,"bbox":[760,382,400,38]}
+{"kind":"shape","id":"sh/ov250ryh","slide":9,"bbox":[728,436,18,18]}
+{"kind":"textbox","id":"sh/pwb69wf2","slide":9,"text":"Supporting evidence","textPreview":"Supporting evidence","textChars":19,"textLines":1,"bbox":[760,424,400,38]}
+{"kind":"shape","id":"sh/2t0nyhgr","slide":9,"bbox":[728,478,18,18]}
+{"kind":"textbox","id":"sh/3uto7mxc","slide":9,"text":"What would change the belief","textPreview":"What would change the belief","textChars":28,"textLines":1,"bbox":[760,466,400,38]}
+{"kind":"textbox","id":"sh/cz2p4ryt","slide":9,"text":"Recent detail supports learning; durable memory avoids replaying an unlimited history.","textPreview":"Recent detail supports learning; durable memory avoids replaying an unlimited history.","textChars":86,"textLines":1,"bbox":[174,590,932,38]}
+{"kind":"textbox","id":"sh/d0b6dwfe","slide":9,"text":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textPreview":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textChars":41,"textLines":1,"bbox":[64,682,500,18]}
+{"kind":"textbox","id":"sh/76x0juls","slide":9,"text":"9","textPreview":"9","textChars":1,"textLines":1,"bbox":[1160,682,56,18]}
+{"kind":"notes","id":"nt/3ue1v7","slide":9,"text":"The updater sees the current profile plus a bounded recent history. It does not resend every raw interaction forever. Recent digests expose patterns; the profile preserves the conclusions needed for future decisions.\n\n[Sources]\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilder.Data/Entities/TurnDigest.cs\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilder.Data/Entities/BeliefDocument.cs\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/AgentCollaborationProfileUpdater.cs\n[/Sources]"}
+{"kind":"slide","id":"sl/tbddwe","slide":10,"title":"10","textShapes":12}
+{"kind":"textbox","id":"sh/kj2tc7yl","slide":10,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[64,35,44,28]}
+{"kind":"textbox","id":"sh/zitsj2x0","slide":10,"text":"TWO-LOOP ARCHITECTURE","textPreview":"TWO-LOOP ARCHITECTURE","textChars":21,"textLines":1,"bbox":[116,35,700,28]}
+{"kind":"textbox","id":"sh/yhkbaxgf","slide":10,"text":"Learning and adaptation are separate responsibilities","textPreview":"Learning and adaptation are separate responsibilities","textChars":53,"textLines":1,"bbox":[64,73,1152,90]}
+{"kind":"shape","id":"sh/98vapcf2","slide":10,"bbox":[64,171,1152,0]}
+{"kind":"shape","id":"sh/87mtg7yh","slide":10,"bbox":[64,220,530,320]}
+{"kind":"shape","id":"sh/7mdsn2xw","slide":10,"bbox":[92,246,138,30]}
+{"kind":"textbox","id":"sh/ml4bexgr","slide":10,"text":"LEARNING LOOP","textPreview":"LEARNING LOOP","textChars":13,"textLines":1,"bbox":[102,246,118,30]}
+{"kind":"textbox","id":"sh/hcfutcfe","slide":10,"text":"What is becoming true about this user?","textPreview":"What is becoming true about this user?","textChars":38,"textLines":1,"bbox":[92,296,450,58]}
+{"kind":"textbox","id":"sh/wb6tkryt","slide":10,"text":"Episode + prior beliefs\n→ revise the durable profile\n→ preserve uncertainty and evidence","textPreview":"Episode + prior beliefs | → revise the durable profile | → preserve uncertainty and evidence","textChars":88,"textLines":3,"bbox":[92,378,450,108]}
+{"kind":"shape","id":"sh/mdcvutkv","slide":10,"bbox":[686,220,530,320]}
+{"kind":"shape","id":"sh/nelcny1g","slide":10,"bbox":[714,246,140,30]}
+{"kind":"textbox","id":"sh/8fudwji1","slide":10,"text":"ADVISORY LOOP","textPreview":"ADVISORY LOOP","textChars":13,"textLines":1,"bbox":[724,246,120,30]}
+{"kind":"textbox","id":"sh/9g3epojm","slide":10,"text":"What should this application do now?","textPreview":"What should this application do now?","textChars":36,"textLines":1,"bbox":[714,296,450,58]}
+{"kind":"textbox","id":"sh/ahcvyt07","slide":10,"text":"Current context + current beliefs\n→ produce bounded recommendations\n→ pass through application policy","textPreview":"Current context + current beliefs | → produce bounded recommendations | → pass through application policy","textChars":101,"textLines":3,"bbox":[714,378,450,108]}
+{"kind":"shape","id":"sh/vilwry1s","slide":10,"bbox":[605,364,70,24]}
+{"kind":"textbox","id":"sh/wjud03ix","slide":10,"text":"The advisor can act on today’s profile while learning continues asynchronously for tomorrow’s decision.","textPreview":"The advisor can act on today’s profile while learning continues asynchronously for tomorrow’s decision.","textChars":103,"textLines":1,"bbox":[126,580,1028,48]}
+{"kind":"textbox","id":"sh/xk3et8ji","slide":10,"text":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textPreview":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textChars":41,"textLines":1,"bbox":[64,682,500,18]}
+{"kind":"textbox","id":"sh/ql8vm9kn","slide":10,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[1160,682,56,18]}
+{"kind":"notes","id":"nt/tbddwe","slide":10,"text":"The architecture deliberately separates updating the user model from advising the current UI. The advisor uses the most recently available profile; the profile update can continue independently so learning does not need to block every interaction.\n\n[Sources]\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/AgentCollaborationAdvisor.cs\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/AgentCollaborationProfileUpdater.cs\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/ObservationEndpoints.cs\n[/Sources]"}
+{"kind":"slide","id":"sl/iamg3w","slide":11,"title":"11","textShapes":18}
+{"kind":"textbox","id":"sh/qd0zqdkb","slide":11,"text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[64,35,44,28]}
+{"kind":"textbox","id":"sh/dgby183m","slide":11,"text":"CONTROLLED ADAPTATION","textPreview":"CONTROLLED ADAPTATION","textChars":21,"textLines":1,"bbox":[116,35,700,28]}
+{"kind":"textbox","id":"sh/cf2hs321","slide":11,"text":"Beliefs are translated into an application-owned contract","textPreview":"Beliefs are translated into an application-owned contract","textChars":57,"textLines":1,"bbox":[64,73,1152,90]}
+{"kind":"shape","id":"sh/3a9gvylk","slide":11,"bbox":[64,171,1152,0]}
+{"kind":"shape","id":"sh/290zmtkz","slide":11,"bbox":[64,240,250,150]}
+{"kind":"shape","id":"sh/pcryx83q","slide":11,"bbox":[82,258,34,34]}
+{"kind":"textbox","id":"sh/4biho325","slide":11,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[82,258,34,34]}
+{"kind":"textbox","id":"sh/fm9grelo","slide":11,"text":"Belief","textPreview":"Belief","textChars":6,"textLines":1,"bbox":[129,256,168,38]}
+{"kind":"textbox","id":"sh/ulgzi9k3","slide":11,"text":"“Graph view is preferred for comparing contracts.”","textPreview":"“Graph view is preferred for comparing contracts.”","textChars":50,"textLines":1,"bbox":[82,302,214,72]}
+{"kind":"shape","id":"sh/8j69kfyh","slide":11,"bbox":[320,302,42,24]}
+{"kind":"shape","id":"sh/9kfqdkz2","slide":11,"bbox":[368,240,250,150]}
+{"kind":"shape","id":"sh/mh4rip0b","slide":11,"bbox":[386,258,34,34]}
+{"kind":"textbox","id":"sh/7id8buhw","slide":11,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[386,258,34,34]}
+{"kind":"textbox","id":"sh/kfm9gfi5","slide":11,"text":"Recommendation","textPreview":"Recommendation","textChars":14,"textLines":1,"bbox":[433,256,168,38]}
+{"kind":"textbox","id":"sh/lgvq9kzq","slide":11,"text":"Preferred layout: graph. Expand highest-value item.","textPreview":"Preferred layout: graph. Expand highest-value item.","textChars":51,"textLines":1,"bbox":[386,302,214,72]}
+{"kind":"shape","id":"sh/yt4re50f","slide":11,"bbox":[624,302,42,24]}
+{"kind":"shape","id":"sh/zed87ah0","slide":11,"bbox":[672,240,250,150]}
+{"kind":"shape","id":"sh/4bq9sjyp","slide":11,"bbox":[690,258,34,34]}
+{"kind":"textbox","id":"sh/5czal4za","slide":11,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[690,258,34,34]}
+{"kind":"textbox","id":"sh/twbipkn2","slide":11,"text":"Policy","textPreview":"Policy","textChars":6,"textLines":1,"bbox":[737,256,168,38]}
+{"kind":"textbox","id":"sh/sv2hgfmh","slide":11,"text":"Check confidence, allowed actions, conflicts, and user control.","textPreview":"Check confidence, allowed actions, conflicts, and user control.","textChars":63,"textLines":1,"bbox":[690,302,214,72]}
+{"kind":"shape","id":"sh/rut0na5w","slide":11,"bbox":[928,302,42,24]}
+{"kind":"shape","id":"sh/6tkze54b","slide":11,"bbox":[976,240,240,150]}
+{"kind":"shape","id":"sh/5sril0n6","slide":11,"bbox":[994,258,34,34]}
+{"kind":"textbox","id":"sh/4rihcvml","slide":11,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[994,258,34,34]}
+{"kind":"textbox","id":"sh/jq90jq50","slide":11,"text":"View state","textPreview":"View state","textChars":10,"textLines":1,"bbox":[1041,256,158,38]}
+{"kind":"textbox","id":"sh/ip0zal4f","slide":11,"text":"Apply a known, reversible application setting.","textPreview":"Apply a known, reversible application setting.","textChars":46,"textLines":1,"bbox":[994,302,204,72]}
+{"kind":"shape","id":"sh/horih0nu","slide":11,"bbox":[188,472,904,88]}
+{"kind":"textbox","id":"sh/w3ih8vm9","slide":11,"text":"The AI proposes intent through a bounded schema. The application remains responsible for execution.","textPreview":"The AI proposes intent through a bounded schema. The application remains responsible for execution.","textChars":99,"textLines":1,"bbox":[226,490,828,50]}
+{"kind":"textbox","id":"sh/m9gfi1k7","slide":11,"text":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textPreview":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textChars":41,"textLines":1,"bbox":[64,682,500,18]}
+{"kind":"textbox","id":"sh/7upwbmls","slide":11,"text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[1160,682,56,18]}
+{"kind":"notes","id":"nt/iamg3w","slide":11,"text":"The AI never receives arbitrary control of the interface. It returns a recommendation in a schema the application owns. Policy decides whether the recommendation is allowed, and the application applies only known, reversible state changes.\n\n[Sources]\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilder.Data/Contracts/AdaptiveFrameworkContracts.cs\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/AgentResultModels.cs\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/AdaptationApprovalPolicy.cs\n[/Sources]"}
+{"kind":"slide","id":"sl/f6a3g3","slide":12,"title":"12","textShapes":14}
+{"kind":"textbox","id":"sh/g72587mx","slide":12,"text":"12","textPreview":"12","textChars":2,"textLines":1,"bbox":[64,35,44,28]}
+{"kind":"textbox","id":"sh/f6t4fmlc","slide":12,"text":"TRUST MODEL","textPreview":"TRUST MODEL","textChars":11,"textLines":1,"bbox":[116,35,700,28]}
+{"kind":"textbox","id":"sh/elkn6h47","slide":12,"text":"Uncertainty, user control, and failure are explicit states","textPreview":"Uncertainty, user control, and failure are explicit states","textChars":58,"textLines":1,"bbox":[64,73,1152,90]}
+{"kind":"shape","id":"sh/pcv6lw3u","slide":12,"bbox":[64,171,1152,0]}
+{"kind":"shape","id":"sh/ob25crm9","slide":12,"bbox":[64,220,544,142]}
+{"kind":"shape","id":"sh/3at4jmlo","slide":12,"bbox":[64,220,6,142]}
+{"kind":"textbox","id":"sh/29knah43","slide":12,"text":"NO SUGGESTION","textPreview":"NO SUGGESTION","textChars":13,"textLines":1,"bbox":[88,238,502,34]}
+{"kind":"textbox","id":"sh/dgv6pw3q","slide":12,"text":"Use the normal application default. Do not simulate an AI answer.","textPreview":"Use the normal application default. Do not simulate an AI answer.","textChars":65,"textLines":1,"bbox":[88,278,502,70]}
+{"kind":"shape","id":"sh/cfm5grm5","slide":12,"bbox":[640,220,544,142]}
+{"kind":"shape","id":"sh/294re9kv","slide":12,"bbox":[640,220,6,142]}
+{"kind":"textbox","id":"sh/3ad8nelg","slide":12,"text":"LOW CONFIDENCE","textPreview":"LOW CONFIDENCE","textChars":14,"textLines":1,"bbox":[664,238,502,34]}
+{"kind":"textbox","id":"sh/obm9gj2l","slide":12,"text":"Observe more evidence or make only a subtle, reversible recommendation.","textPreview":"Observe more evidence or make only a subtle, reversible recommendation.","textChars":71,"textLines":1,"bbox":[664,278,502,70]}
+{"kind":"shape","id":"sh/pcvqpo36","slide":12,"bbox":[64,395,544,142]}
+{"kind":"shape","id":"sh/qd4ritkr","slide":12,"bbox":[64,395,6,142]}
+{"kind":"textbox","id":"sh/bed8rylc","slide":12,"text":"CONTRADICTION","textPreview":"CONTRADICTION","textChars":13,"textLines":1,"bbox":[88,413,502,34]}
+{"kind":"textbox","id":"sh/cz69k32x","slide":12,"text":"Reassess the belief instead of forcing consistency.","textPreview":"Reassess the belief instead of forcing consistency.","textChars":51,"textLines":1,"bbox":[88,453,502,70]}
+{"kind":"shape","id":"sh/d0fqt83i","slide":12,"bbox":[640,395,544,142]}
+{"kind":"shape","id":"sh/6hk76pkn","slide":12,"bbox":[640,395,6,142]}
+{"kind":"textbox","id":"sh/7it8ful8","slide":12,"text":"MODEL FAILURE","textPreview":"MODEL FAILURE","textChars":13,"textLines":1,"bbox":[664,413,502,34]}
+{"kind":"textbox","id":"sh/vmponq10","slide":12,"text":"Preserve the existing profile and record diagnostics for investigation.","textPreview":"Preserve the existing profile and record diagnostics for investigation.","textChars":71,"textLines":1,"bbox":[664,453,502,70]}
+{"kind":"textbox","id":"sh/algne50f","slide":12,"text":"Default behavior is a valid outcome. Fabricated intelligence is not.","textPreview":"Default behavior is a valid outcome. Fabricated intelligence is not.","textChars":68,"textLines":1,"bbox":[198,590,884,38]}
+{"kind":"textbox","id":"sh/xor6p0jq","slide":12,"text":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textPreview":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textChars":41,"textLines":1,"bbox":[64,682,500,18]}
+{"kind":"textbox","id":"sh/wny5gvil","slide":12,"text":"12","textPreview":"12","textChars":2,"textLines":1,"bbox":[1160,682,56,18]}
+{"kind":"notes","id":"nt/f6a3g3","slide":12,"text":"This is a key design principle. If the advisor has no useful suggestion, the application keeps its ordinary state. There is no simulated AI fallback. Profile update failure preserves the existing profile, and diagnostic records make the failure visible.\n\n[Sources]\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/AgentCollaborationAdvisor.cs\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/AgentCollaborationProfileUpdater.cs\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/FileCollaborationAgentTranscriptLogger.cs\n[/Sources]"}
+{"kind":"slide","id":"sl/ji2ht1","slide":13,"title":"13","textShapes":24}
+{"kind":"textbox","id":"sh/mxgr29gj","slide":13,"text":"13","textPreview":"13","textChars":2,"textLines":1,"bbox":[64,35,44,28]}
+{"kind":"textbox","id":"sh/t0raxofu","slide":13,"text":"TRACEABILITY","textPreview":"TRACEABILITY","textChars":12,"textLines":1,"bbox":[116,35,700,28]}
+{"kind":"textbox","id":"sh/8zit4jy9","slide":13,"text":"Every belief change and recommendation is reconstructable","textPreview":"Every belief change and recommendation is reconstructable","textChars":57,"textLines":1,"bbox":[64,73,1152,90]}
+{"kind":"shape","id":"sh/v29szyx0","slide":13,"bbox":[64,171,1152,0]}
+{"kind":"shape","id":"sh/u10b6tgf","slide":13,"bbox":[64,220,344,126]}
+{"kind":"textbox","id":"sh/hora1of6","slide":13,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[82,236,36,24]}
+{"kind":"textbox","id":"sh/gnit8jyl","slide":13,"text":"Raw observations","textPreview":"Raw observations","textChars":16,"textLines":1,"bbox":[126,234,258,42]}
+{"kind":"textbox","id":"sh/b6psnuxw","slide":13,"text":"what the user did","textPreview":"what the user did","textChars":17,"textLines":1,"bbox":[126,284,258,36]}
+{"kind":"shape","id":"sh/a5wrupgb","slide":13,"bbox":[448,220,344,126]}
+{"kind":"textbox","id":"sh/cfm9wvah","slide":13,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[466,236,36,24]}
+{"kind":"textbox","id":"sh/dgva50b2","slide":13,"text":"Surface context","textPreview":"Surface context","textChars":15,"textLines":1,"bbox":[510,234,258,42]}
+{"kind":"textbox","id":"sh/qd4rulsr","slide":13,"text":"what the app knew","textPreview":"what the app knew","textChars":17,"textLines":1,"bbox":[510,284,258,36]}
+{"kind":"shape","id":"sh/red83qtw","slide":13,"bbox":[832,220,344,126]}
+{"kind":"textbox","id":"sh/0jm90fat","slide":13,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[850,236,36,24]}
+{"kind":"textbox","id":"sh/1kfa90be","slide":13,"text":"Derived evidence","textPreview":"Derived evidence","textChars":16,"textLines":1,"bbox":[894,234,258,42]}
+{"kind":"textbox","id":"sh/eh4ry5sn","slide":13,"text":"what was computed","textPreview":"what was computed","textChars":17,"textLines":1,"bbox":[894,284,258,36]}
+{"kind":"shape","id":"sh/zids7at8","slide":13,"bbox":[64,390,344,126]}
+{"kind":"textbox","id":"sh/gn29oba9","slide":13,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[82,406,36,24]}
+{"kind":"textbox","id":"sh/hobqxgbu","slide":13,"text":"Model request / response","textPreview":"Model request / response","textChars":24,"textLines":1,"bbox":[126,404,258,42]}
+{"kind":"textbox","id":"sh/xsjy58zm","slide":13,"text":"what the agent considered","textPreview":"what the agent considered","textChars":25,"textLines":1,"bbox":[126,454,258,36]}
+{"kind":"shape","id":"sh/w7axc3i1","slide":13,"bbox":[448,390,344,126]}
+{"kind":"textbox","id":"sh/b61g3yhg","slide":13,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[466,406,36,24]}
+{"kind":"textbox","id":"sh/a5sfat0v","slide":13,"text":"Belief revision","textPreview":"Belief revision","textChars":15,"textLines":1,"bbox":[510,404,258,42]}
+{"kind":"textbox","id":"sh/5w3y9szi","slide":13,"text":"what changed and why","textPreview":"what changed and why","textChars":20,"textLines":1,"bbox":[510,454,258,36]}
+{"kind":"shape","id":"sh/kvaxgnix","slide":13,"bbox":[832,390,344,126]}
+{"kind":"textbox","id":"sh/ju1g7ihs","slide":13,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[850,406,36,24]}
+{"kind":"textbox","id":"sh/itsfed07","slide":13,"text":"Approved adaptation","textPreview":"Approved adaptation","textChars":19,"textLines":1,"bbox":[894,404,258,42]}
+{"kind":"textbox","id":"sh/t03ydszu","slide":13,"text":"what the UI applied","textPreview":"what the UI applied","textChars":19,"textLines":1,"bbox":[894,454,258,36]}
+{"kind":"textbox","id":"sh/szuhkny9","slide":13,"text":"A correlated run record supports debugging, evaluation, and governance without guessing what happened.","textPreview":"A correlated run record supports debugging, evaluation, and governance without guessing what happened.","textChars":102,"textLines":1,"bbox":[136,577,1008,48]}
+{"kind":"textbox","id":"sh/q5ovypgr","slide":13,"text":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textPreview":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textChars":41,"textLines":1,"bbox":[64,682,500,18]}
+{"kind":"textbox","id":"sh/r6xc7uxc","slide":13,"text":"13","textPreview":"13","textChars":2,"textLines":1,"bbox":[1160,682,56,18]}
+{"kind":"notes","id":"nt/ji2ht1","slide":13,"text":"For each run, the system can correlate the original observations, contextual snapshot, deterministic analysis, model interaction, profile outcome, advisor result, and applied decision. This is the foundation for evaluating behavior rather than relying on anecdotes.\n\n[Sources]\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/AgentRunRecorder.cs\n- D:/Projects/AdaptiveWorkflow/src/AdaptiveTeamBuilderSvc/FileCollaborationAgentTranscriptLogger.cs\n[/Sources]"}
+{"kind":"slide","id":"sl/oot22u","slide":14,"title":"14","textShapes":18}
+{"kind":"textbox","id":"sh/tczat47a","slide":14,"text":"14","textPreview":"14","textChars":2,"textLines":1,"bbox":[64,35,44,28]}
+{"kind":"textbox","id":"sh/69orypoj","slide":14,"text":"WHAT COMES NEXT","textPreview":"WHAT COMES NEXT","textChars":15,"textLines":1,"bbox":[116,35,700,28]}
+{"kind":"textbox","id":"sh/rahsrup4","slide":14,"text":"The POC establishes the architecture—and exposes the next evaluation questions","textPreview":"The POC establishes the architecture—and exposes the next evaluation questions","textChars":78,"textLines":1,"bbox":[64,73,1152,90]}
+{"kind":"shape","id":"sh/gzqt4z61","slide":14,"bbox":[64,171,1152,0]}
+{"kind":"shape","id":"sh/10zax476","slide":14,"bbox":[64,210,544,92]}
+{"kind":"shape","id":"sh/ed8b2pov","slide":14,"bbox":[82,235,42,42]}
+{"kind":"textbox","id":"sh/fyhsvupg","slide":14,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[82,235,42,42]}
+{"kind":"textbox","id":"sh/w369sf6h","slide":14,"text":"How quickly should a preference become actionable?","textPreview":"How quickly should a preference become actionable?","textChars":50,"textLines":1,"bbox":[142,222,440,68]}
+{"kind":"shape","id":"sh/h4falk72","slide":14,"bbox":[640,210,544,92]}
+{"kind":"shape","id":"sh/1wzap4na","slide":14,"bbox":[658,235,42,42]}
+{"kind":"textbox","id":"sh/gvq9wz6p","slide":14,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[658,235,42,42]}
+{"kind":"textbox","id":"sh/fux8nu54","slide":14,"text":"Which evidence should outweigh contradiction?","textPreview":"Which evidence should outweigh contradiction?","textChars":45,"textLines":1,"bbox":[718,222,440,68]}
+{"kind":"shape","id":"sh/etorupoj","slide":14,"bbox":[64,326,544,92]}
+{"kind":"shape","id":"sh/pkzat4n6","slide":14,"bbox":[82,351,42,42]}
+{"kind":"textbox","id":"sh/ojq90z61","slide":14,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[82,351,42,42]}
+{"kind":"textbox","id":"sh/nihsre5g","slide":14,"text":"When should adaptation be silent, suggested, or automatic?","textPreview":"When should adaptation be silent, suggested, or automatic?","textChars":58,"textLines":1,"bbox":[142,338,440,68]}
+{"kind":"shape","id":"sh/2h8ry9ov","slide":14,"bbox":[640,326,544,92]}
+{"kind":"shape","id":"sh/xojaxoni","slide":14,"bbox":[658,351,42,42]}
+{"kind":"textbox","id":"sh/cna94j6x","slide":14,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[658,351,42,42]}
+{"kind":"textbox","id":"sh/writ0nu9","slide":14,"text":"How well do beliefs transfer across surfaces and workflows?","textPreview":"How well do beliefs transfer across surfaces and workflows?","textChars":59,"textLines":1,"bbox":[718,338,440,68]}
+{"kind":"shape","id":"sh/xsrutsvu","slide":14,"bbox":[64,442,544,92]}
+{"kind":"shape","id":"sh/apgbydc3","slide":14,"bbox":[82,467,42,42]}
+{"kind":"textbox","id":"sh/vqpcrido","slide":14,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[82,467,42,42]}
+{"kind":"textbox","id":"sh/kvit47u5","slide":14,"text":"What thresholds create trust for each class of change?","textPreview":"What thresholds create trust for each class of change?","textChars":54,"textLines":1,"bbox":[142,454,440,68]}
+{"kind":"shape","id":"sh/5wruxcvq","slide":14,"bbox":[640,442,544,92]}
+{"kind":"shape","id":"sh/it0b2xcz","slide":14,"bbox":[658,467,42,42]}
+{"kind":"textbox","id":"sh/ju9cv2dk","slide":14,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[658,467,42,42]}
+{"kind":"textbox","id":"sh/0zyts3e1","slide":14,"text":"How do we measure usefulness without rewarding mere activity?","textPreview":"How do we measure usefulness without rewarding mere activity?","textChars":61,"textLines":1,"bbox":[718,454,440,68]}
+{"kind":"shape","id":"sh/l07al8vm","slide":14,"bbox":[180,586,920,52]}
+{"kind":"textbox","id":"sh/3qxona10","slide":14,"text":"The next phase is not more framework—it is measured learning quality, trust, and business value.","textPreview":"The next phase is not more framework—it is measured learning quality, trust, and business value.","textChars":96,"textLines":1,"bbox":[205,586,870,52]}
+{"kind":"textbox","id":"sh/2pone50v","slide":14,"text":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textPreview":"ADAPTIVE WORKFLOW  /  CONTEXTUAL LEARNING","textChars":41,"textLines":1,"bbox":[64,682,500,18]}
+{"kind":"textbox","id":"sh/psf6pkj6","slide":14,"text":"14","textPreview":"14","textChars":2,"textLines":1,"bbox":[1160,682,56,18]}
+{"kind":"notes","id":"nt/oot22u","slide":14,"text":"Close by positioning the POC correctly: the core architecture exists. The important next work is evaluation—learning speed, precision, contradiction handling, cross-context transfer, user trust, and measurable value. The live demo is optional evidence, not the organizing narrative of this deck."}

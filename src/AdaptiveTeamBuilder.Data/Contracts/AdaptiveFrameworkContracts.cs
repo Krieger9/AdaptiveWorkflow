@@ -123,12 +123,12 @@ public record PreferredLayoutDto(
     string? SignalsDisplay,
     string? Rationale,
     /// <summary>
-    /// When ExpandAll is false, expand this many highest-ranked cards by ExpandBySignal
-    /// (e.g. 2 for keep-top-two-by-Margin). Null means leave all collapsed.
+    /// When ExpandAll is false, expand this many cards. ExpandBySignal ranks them when known;
+    /// otherwise concrete expand suggestions identify the targets. Null means leave all collapsed.
     /// </summary>
     int? ExpandTopCount = null,
     /// <summary>
-    /// Commercial signal used with ExpandTopCount: Margin | Profit | Value | Win prob.
+    /// Optional commercial signal used with ExpandTopCount: Margin | Profit | Value | Win prob.
     /// (or estimatedMarginPercent / estimatedProfit / estimatedContractValue / winProbabilityPercent).
     /// </summary>
     string? ExpandBySignal = null);

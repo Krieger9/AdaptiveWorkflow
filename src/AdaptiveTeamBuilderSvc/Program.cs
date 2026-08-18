@@ -82,22 +82,17 @@ builder.Services.AddSingleton<IAgentRunRecorder, FileAgentRunRecorder>();
 builder.Services.AddSingleton<ShadowCounterService>();
 builder.Services.AddSingleton<SyntheticPersonaProvider>();
 builder.Services.AddSingleton<IAdaptationApprovalPolicy, AutoApproveAdaptationPolicy>();
-builder.Services.AddSingleton<StubCollaborationAdvisor>();
-builder.Services.AddSingleton<StubCollaborationProfileUpdater>();
 
-if (agentFramework.IsConfigured)
+if (!agentFramework.IsConfigured)
 {
-    builder.Services.AddSingleton<FoundryCollaborationAgents>();
-    builder.Services.AddSingleton<ICollaborationAdvisor, AgentCollaborationAdvisor>();
-    builder.Services.AddSingleton<ICollaborationProfileUpdater, AgentCollaborationProfileUpdater>();
+    throw new InvalidOperationException(
+        "AgentFramework is not configured. Set AgentFramework:ApiKey; this service does not "
+        + "simulate collaboration-agent responses with local stubs.");
 }
-else
-{
-    builder.Services.AddSingleton<ICollaborationAdvisor>(sp =>
-        sp.GetRequiredService<StubCollaborationAdvisor>());
-    builder.Services.AddSingleton<ICollaborationProfileUpdater>(sp =>
-        sp.GetRequiredService<StubCollaborationProfileUpdater>());
-}
+
+builder.Services.AddSingleton<FoundryCollaborationAgents>();
+builder.Services.AddSingleton<ICollaborationAdvisor, AgentCollaborationAdvisor>();
+builder.Services.AddSingleton<ICollaborationProfileUpdater, AgentCollaborationProfileUpdater>();
 
 builder.Services.AddSingleton<ICollaborationProfileUpdateQueue, CollaborationProfileUpdateQueue>();
 // Registered as a resolvable singleton so the dev-only replay endpoint can reuse ProcessAsync.
@@ -106,13 +101,6 @@ builder.Services.AddHostedService(sp =>
     sp.GetRequiredService<CollaborationProfileUpdateBackgroundService>());
 
 var app = builder.Build();
-
-if (!agentFramework.IsConfigured)
-{
-    app.Logger.LogWarning(
-        "AgentFramework:ApiKey is not set. Collaboration advise/profile update will use stubs. "
-        + "Set the key with: dotnet user-secrets set \"AgentFramework:ApiKey\" \"<your-api-key>\"");
-}
 
 if (app.Environment.IsDevelopment())
 {

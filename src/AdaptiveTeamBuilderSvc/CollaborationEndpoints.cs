@@ -70,6 +70,7 @@ public static class CollaborationEndpoints
         IAdaptationApprovalPolicy approvalPolicy,
         IAgentRunRecorder runRecorder,
         GlossaryProvider glossary,
+        Microsoft.Extensions.Options.IOptions<AgentFrameworkOptions> agentOptions,
         CancellationToken cancellationToken)
     {
         var user = await ResolveUserAsync(principal, db, cancellationToken);
@@ -103,6 +104,9 @@ public static class CollaborationEndpoints
                 Trigger = "bootstrap",
                 PromptVersion = FileAgentRunRecorder.Hash(
                     FoundryCollaborationAgents.AdvisorInstructions),
+                Model = agentOptions.Value.DeploymentName,
+                RunOptions =
+                    $"reasoning.effort={agentOptions.Value.ReasoningEffort}; reasoning.output=none",
                 ContextHash = request.Surface.ContextHash,
                 GlossaryVersion = glossary.Version,
                 InputInteractionIds = InteractionIds(request.Interactions),
@@ -131,6 +135,7 @@ public static class CollaborationEndpoints
         IAdaptationApprovalPolicy approvalPolicy,
         IAgentRunRecorder runRecorder,
         GlossaryProvider glossary,
+        Microsoft.Extensions.Options.IOptions<AgentFrameworkOptions> agentOptions,
         CancellationToken cancellationToken)
     {
         var user = await ResolveUserAsync(principal, db, cancellationToken);
@@ -162,6 +167,27 @@ public static class CollaborationEndpoints
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var profile = await profileStore.GetAsync(user.Id, cancellationToken);
+        long? turnDigestId = null;
+        if (interactions.Count > 0)
+        {
+            var surfacePath = string.Join(" / ", request.Surface.SurfacePath);
+            var digest = CollaborationContextFormatter.FormatDecisionTurnDigest(
+                request.Controls,
+                request.Surface.ViewState,
+                interactions,
+                CollaborationContextFormatter.ActiveProfileSummary(profile),
+                surfacePath);
+            turnDigestId = await profileStore.AppendTurnDigestAsync(
+                user.Id,
+                surfacePath,
+                digest,
+                cancellationToken);
+
+            // Make the just-finished turn visible to this advice call instead of waiting for
+            // the slower background profile-document update.
+            profile = await profileStore.GetAsync(user.Id, cancellationToken);
+        }
+
         var adviseRequest = new AdviseRequest(
             request.App,
             request.Surface,
@@ -190,6 +216,9 @@ public static class CollaborationEndpoints
                 Trigger = "flush-on-action",
                 PromptVersion = FileAgentRunRecorder.Hash(
                     FoundryCollaborationAgents.AdvisorInstructions),
+                Model = agentOptions.Value.DeploymentName,
+                RunOptions =
+                    $"reasoning.effort={agentOptions.Value.ReasoningEffort}; reasoning.output=none",
                 ContextHash = request.Surface.ContextHash,
                 GlossaryVersion = glossary.Version,
                 InputInteractionIds = InteractionIds(interactions),
@@ -210,7 +239,9 @@ public static class CollaborationEndpoints
                 new CollaborationProfileUpdateWorkItem(
                     user.Id,
                     interactions,
-                    BuildUpdateContext(request)),
+                    BuildUpdateContext(request),
+                    turnDigestId,
+                    TurnDigestRecorded: true),
                 cancellationToken);
         }
 

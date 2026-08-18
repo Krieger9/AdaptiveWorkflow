@@ -28,6 +28,7 @@ import { useSurfaceObservations } from '../collaboration/useSurfaceObservations'
 import './ContractsPage.css'
 
 const PROFILE_REFRESH_DELAY_MS = 750
+const PROFILE_REFRESH_RETRY_DELAYS_MS = [1_500, 3_000, 7_500, 15_000, 30_000, 60_000]
 
 /** Browser forward / MouseX2 side button (not middle-click). */
 const MOUSE_FORWARD_BUTTON = 4
@@ -176,6 +177,7 @@ function pickTopContractIdsBySignal(
 function resolveBootstrapExpandIds(
   contracts: ContractListItem[],
   layout: CollaborationAdviseResponse['preferredLayout'] | null | undefined,
+  suggestions: CollaborationSuggestion[],
 ): string[] {
   if (!layout) {
     return []
@@ -189,6 +191,22 @@ function resolveBootstrapExpandIds(
 
   if (topCount != null && bySignal) {
     return pickTopContractIdsBySignal(contracts, bySignal, topCount)
+  }
+
+  // When correlated signals prevent the agent from naming one durable ranking signal,
+  // use its concrete expand suggestions rather than discarding the learned top-N count.
+  if (topCount != null) {
+    const visibleIds = new Set(contracts.map((item) => item.id))
+    return suggestions
+      .filter(
+        (suggestion) =>
+          suggestion.kind === 'expand' &&
+          suggestion.targetControlId != null &&
+          visibleIds.has(suggestion.targetControlId),
+      )
+      .map((suggestion) => suggestion.targetControlId as string)
+      .filter((id, index, ids) => ids.indexOf(id) === index)
+      .slice(0, topCount)
   }
 
   if (layout.expandAll) {
@@ -320,6 +338,7 @@ function ContractsPageInner({ userId, onSelect, onError }: ContractsPageProps) {
   const [lastAdvise, setLastAdvise] = useState<CollaborationAdviseResponse | null>(null)
   const [debugOpen, setDebugOpen] = useState(false)
   const [signalsView, setSignalsView] = useState<SignalsViewMode>('values')
+  const profileRefreshTimerRef = useRef<number | null>(null)
 
   const { emit, emitSignalFocus, emitSignalActivate, drain, peek } = useSurfaceObservations()
 
@@ -337,39 +356,87 @@ function ContractsPageInner({ userId, onSelect, onError }: ContractsPageProps) {
     [contracts],
   )
 
-  const primarySuggestion = lastAdvise?.suggestions[0] ?? null
-  const suggestionSatisfied = (() => {
-    if (!primarySuggestion || advising) {
-      return false
-    }
-    if (primarySuggestion.kind === 'set-view') {
-      const target = primarySuggestion.payload?.signalsDisplay
+  const suggestionIsSatisfied = (suggestion: CollaborationSuggestion): boolean => {
+    if (suggestion.kind === 'set-view') {
+      const target = suggestion.payload?.signalsDisplay
       return target != null && target === signalsView
     }
     if (
-      primarySuggestion.kind === 'expand' ||
-      primarySuggestion.id === 'expand-first' ||
-      primarySuggestion.id.startsWith('expand-')
+      suggestion.kind === 'expand' ||
+      suggestion.id === 'expand-first' ||
+      suggestion.id.startsWith('expand-')
     ) {
       return (
-        primarySuggestion.targetControlId != null &&
-        expandedIds.has(primarySuggestion.targetControlId)
+        suggestion.targetControlId != null && expandedIds.has(suggestion.targetControlId)
+      )
+    }
+    if (suggestion.kind === 'collapse') {
+      return (
+        suggestion.targetControlId != null && !expandedIds.has(suggestion.targetControlId)
       )
     }
     return false
+  }
+  const availableSuggestions = lastAdvise?.suggestions ?? []
+  const primarySuggestion =
+    availableSuggestions.find((suggestion) => !suggestionIsSatisfied(suggestion)) ??
+    availableSuggestions[0] ??
+    null
+  const suggestionSatisfied = (() => {
+    if (!primarySuggestion) {
+      return false
+    }
+    return suggestionIsSatisfied(primarySuggestion)
   })()
   const forwardActionReady = Boolean(primarySuggestion && !advising && !suggestionSatisfied)
   const applySuggestionRef = useRef<() => void>(() => {})
 
-  const refreshProfileSoon = useCallback(() => {
-    window.setTimeout(() => {
-      void getCollaborationProfile()
-        .then((response) => setProfile(response.profile))
-        .catch(() => {
-          /* demo panel refresh is best-effort */
-        })
-    }, PROFILE_REFRESH_DELAY_MS)
+  const refreshProfileSoon = useCallback((baselineVersion: number) => {
+    if (profileRefreshTimerRef.current != null) {
+      window.clearTimeout(profileRefreshTimerRef.current)
+    }
+
+    let attempt = 0
+    const poll = () => {
+      const delay =
+        attempt === 0
+          ? PROFILE_REFRESH_DELAY_MS
+          : PROFILE_REFRESH_RETRY_DELAYS_MS[attempt - 1]
+      attempt += 1
+      profileRefreshTimerRef.current = window.setTimeout(() => {
+        void getCollaborationProfile()
+          .then((response) => {
+            setProfile(response.profile)
+            if (
+              response.profile.version <= baselineVersion &&
+              attempt <= PROFILE_REFRESH_RETRY_DELAYS_MS.length
+            ) {
+              poll()
+            } else {
+              profileRefreshTimerRef.current = null
+            }
+          })
+          .catch(() => {
+            if (attempt <= PROFILE_REFRESH_RETRY_DELAYS_MS.length) {
+              poll()
+            } else {
+              profileRefreshTimerRef.current = null
+            }
+          })
+      }, delay)
+    }
+
+    poll()
   }, [])
+
+  useEffect(
+    () => () => {
+      if (profileRefreshTimerRef.current != null) {
+        window.clearTimeout(profileRefreshTimerRef.current)
+      }
+    },
+    [],
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -434,7 +501,7 @@ function ContractsPageInner({ userId, onSelect, onError }: ContractsPageProps) {
             })
           }
 
-          const bootstrapIds = resolveBootstrapExpandIds(items, layout)
+          const bootstrapIds = resolveBootstrapExpandIds(items, layout, response.suggestions)
           if (bootstrapIds.length > 0) {
             const choiceSet = items.map(contractChoiceSetItem)
             for (const contractId of bootstrapIds) {
@@ -547,10 +614,19 @@ function ContractsPageInner({ userId, onSelect, onError }: ContractsPageProps) {
       if (options?.openDebug) {
         setDebugOpen(true)
       }
-      refreshProfileSoon()
+      refreshProfileSoon(profile.version)
       return response
     },
-    [contracts, detailsById, drain, expandedIds, refreshProfileSoon, signalsView, userId],
+    [
+      contracts,
+      detailsById,
+      drain,
+      expandedIds,
+      profile.version,
+      refreshProfileSoon,
+      signalsView,
+      userId,
+    ],
   )
 
   async function expandContract(contractId: string) {

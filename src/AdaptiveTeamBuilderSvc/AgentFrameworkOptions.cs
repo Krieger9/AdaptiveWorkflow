@@ -14,6 +14,9 @@ public sealed class AgentFrameworkOptions
 
     public string DeploymentName { get; set; } = "gpt-5.4-mini";
 
+    /// <summary>none | low | medium | high | xhigh</summary>
+    public string ReasoningEffort { get; set; } = "none";
+
     /// <summary>Set via User Secrets: AgentFramework:ApiKey</summary>
     public string? ApiKey { get; set; }
 
